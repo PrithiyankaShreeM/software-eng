@@ -1,0 +1,18 @@
+<div class="error-page">
+  <div class="error-card">
+    <div class="error-card__icon"><%- icon('alert-triangle') %></div>
+    <div class="error-card__code">500</div>
+    <h1>Something went wrong</h1>
+    <p>An unexpected error occurred while processing your request. The incident has been logged for the administrator.</p>
+    <% if (typeof errorId !== 'undefined' && errorId) { %>
+      <div class="error-detail"><div><strong>Reference</strong></div><code><%= errorId %></code></div>
+    <% } %>
+    <div class="error-card__actions mt-5">
+      <% if (currentUser) { %>
+        <a href="<%= (dashboards.find(d => d.role === currentUser.role) || {}).path || '/' %>" class="btn btn--primary"><%- icon('home') %> My dashboard</a>
+      <% } else { %>
+        <a href="/login" class="btn btn--primary"><%- icon('login') %> Sign in</a>
+      <% } %>
+    </div>
+  </div>
+</div>

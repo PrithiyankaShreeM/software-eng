@@ -1,0 +1,30 @@
+<div class="page-head">
+  <div class="page-head__text">
+    <h2>Notifications</h2>
+    <p>Announcements addressed to your role</p>
+  </div>
+</div>
+
+<section class="card">
+  <div class="card__head">
+    <div><h3>Inbox</h3><p><%= notifications.length %> notification<%= notifications.length === 1 ? '' : 's' %></p></div>
+  </div>
+  <% if (notifications.length === 0) { %>
+    <div class="empty"><div class="empty__icon"><%- icon('bell') %></div><h4>No notifications</h4><p>You have no announcements at this time.</p></div>
+  <% } else { %>
+    <div class="card__body">
+      <div class="stack">
+        <% notifications.forEach((n) => { %>
+          <div style="padding:var(--sp-4);border-radius:var(--r-md);border:1px solid var(--ink-200);border-left:4px solid <%= n.severity === 'warning' ? 'var(--warning-500)' : n.severity === 'success' ? 'var(--success-500)' : n.severity === 'danger' ? 'var(--danger-500)' : 'var(--navy-400)' %>">
+            <div class="row row--between mb-2">
+              <span class="strong"><%= n.title %></span>
+              <span class="badge badge--<%= n.severity === 'warning' ? 'warning' : n.severity === 'success' ? 'success' : 'info' %>"><%= n.severity %></span>
+            </div>
+            <p class="small" style="color:var(--ink-600);margin:0"><%= n.body %></p>
+            <div class="tiny mt-2" style="color:var(--ink-400)"><%= formatDateTime(n.created_at) %> · <%= timeAgo(n.created_at) %></div>
+          </div>
+        <% }); %>
+      </div>
+    </div>
+  <% } %>
+</section>

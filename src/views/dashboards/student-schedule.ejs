@@ -1,0 +1,79 @@
+<div class="page-head">
+  <div class="page-head__text">
+    <h2>Examination Timetable</h2>
+    <p>Semester <%= schedule.length ? schedule[0].semester : '—' %> · all papers you are registered for</p>
+  </div>
+  <div class="page-head__actions">
+    <button type="button" class="btn btn--ghost btn--sm" onclick="window.print()"><%- icon('print') %> Print timetable</button>
+  </div>
+</div>
+
+<% if (schedule.length === 0) { %>
+  <div class="card">
+    <div class="empty">
+      <div class="empty__icon"><%- icon('calendar') %></div>
+      <h4>No registered examinations</h4>
+      <p>You are not currently registered for any examination papers. Contact your department office if you believe this is incorrect.</p>
+    </div>
+  </div>
+<% } else { %>
+  <div class="stack">
+    <section class="card">
+      <div class="card__head">
+        <div><h3>Registered Papers</h3><p><%= schedule.length %> paper<%= schedule.length === 1 ? '' : 's' %> on record</p></div>
+      </div>
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th scope="col">Code</th>
+              <th scope="col">Paper</th>
+              <th scope="col">Date</th>
+              <th scope="col">Time</th>
+              <th scope="col">Hall</th>
+              <th scope="col">Duration</th>
+              <th scope="col">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% schedule.forEach((exam) => {
+                 const isPast = new Date(`${exam.exam_date}T23:59:59`) < new Date();
+                 const isSoon = !isPast && (new Date(`${exam.exam_date}T00:00:00`) - Date.now()) < 7 * 86400000;
+            %>
+              <tr>
+                <td class="mono strong"><%= exam.code %></td>
+                <td>
+                  <div class="table__primary"><%= exam.title %></div>
+                  <div class="table__sub">Semester <%= exam.semester %> · <%= exam.programme %></div>
+                </td>
+                <td class="nowrap"><%= formatDate(exam.exam_date) %></td>
+                <td class="mono nowrap"><%= exam.start_time %></td>
+                <td class="tiny"><%= exam.hall %></td>
+                <td class="nowrap"><%= exam.duration_mins %> min</td>
+                <td>
+                  <% if (exam.status === 'completed') { %>
+                    <span class="badge badge--neutral">Completed</span>
+                  <% } else if (isPast) { %>
+                    <span class="badge badge--neutral">Concluded</span>
+                  <% } else if (isSoon) { %>
+                    <span class="badge badge--warning"><span class="badge-dot"></span> Imminent</span>
+                  <% } else { %>
+                    <span class="badge badge--info"><span class="badge-dot"></span> Scheduled</span>
+                  <% } %>
+                </td>
+              </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+      <div class="card__foot">
+        Timetable is published by the Office of the Controller of Examinations. Hall allocation may change up to 48 hours before each paper.
+      </div>
+    </section>
+
+    <div class="security-note">
+      <%- icon('info') %>
+      <span>Reporting time is 30 minutes before the scheduled start. Carry your hall ticket and university identity card.</span>
+    </div>
+  </div>
+<% } %>

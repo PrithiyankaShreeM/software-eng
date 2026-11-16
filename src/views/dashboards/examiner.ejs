@@ -1,0 +1,145 @@
+<div class="role-banner">
+  <div class="role-banner__icon"><%- icon('pencil') %></div>
+  <div class="role-banner__body">
+    <div class="role-banner__title">Examiner Workspace — <%= currentUser.fullName %></div>
+    <div class="role-banner__desc">
+      <%= currentUser.designation || 'Examiner' %> · You may schedule examinations, author papers and evaluate scripts.
+      Publishing results is reserved for the Controller of Examinations.
+    </div>
+  </div>
+  <div class="role-banner__meta">
+    <span class="badge badge--gold"><%= currentUser.publicId %></span>
+  </div>
+</div>
+
+<div class="stat-grid">
+  <div class="stat stat--info">
+    <div class="stat__top"><span class="stat__label">Scheduled exams</span><span class="stat__icon"><%- icon('calendar') %></span></div>
+    <div class="stat__value"><%= overview.stats.scheduledExams %></div>
+    <div class="stat__meta">Across all programmes</div>
+  </div>
+  <div class="stat stat--gold">
+    <div class="stat__top"><span class="stat__label">Paper drafts</span><span class="stat__icon"><%- icon('file') %></span></div>
+    <div class="stat__value"><%= overview.stats.drafts %></div>
+    <div class="stat__meta">Awaiting submission</div>
+  </div>
+  <div class="stat stat--warning">
+    <div class="stat__top"><span class="stat__label">Awaiting evaluation</span><span class="stat__icon"><%- icon('clipboard') %></span></div>
+    <div class="stat__value"><%= overview.stats.awaitingEvaluation %></div>
+    <div class="stat__meta">Scripts not yet marked</div>
+  </div>
+  <div class="stat stat--success">
+    <div class="stat__top"><span class="stat__label">Evaluated</span><span class="stat__icon"><%- icon('check-circle') %></span></div>
+    <div class="stat__value"><%= overview.stats.evaluated %></div>
+    <div class="stat__meta">Sent to moderation</div>
+  </div>
+</div>
+
+<div class="grid-main-side">
+  <div class="stack">
+    <section class="card">
+      <div class="card__head">
+        <div><h3>Examination Schedule</h3><p>Scheduled and ongoing examinations</p></div>
+        <div class="card__actions">
+          <a href="/examiner/exams" class="btn btn--ghost btn--sm"><%- icon('plus') %> Schedule</a>
+        </div>
+      </div>
+      <% if (overview.upcoming.length === 0) { %>
+        <div class="empty">
+          <div class="empty__icon"><%- icon('calendar') %></div>
+          <h4>No examinations scheduled</h4>
+          <p>Use “Schedule” to add an examination to the timetable.</p>
+        </div>
+      <% } else { %>
+        <div class="table-wrap">
+          <table class="table">
+            <thead>
+              <tr><th scope="col">Code</th><th scope="col">Paper</th><th scope="col">Date</th><th scope="col">Time</th><th scope="col">Hall</th><th scope="col">Status</th></tr>
+            </thead>
+            <tbody>
+              <% overview.upcoming.forEach((e) => { %>
+                <tr>
+                  <td class="mono strong"><%= e.code %></td>
+                  <td><div class="table__primary"><%= e.title %></div><div class="table__sub">Sem <%= e.semester %> · <%= e.programme %></div></td>
+                  <td class="nowrap"><%= formatDate(e.exam_date) %></td>
+                  <td class="mono nowrap"><%= e.start_time %></td>
+                  <td class="tiny"><%= e.hall %></td>
+                  <td><span class="badge badge--<%= e.status === 'ongoing' ? 'warning' : 'info' %>"><%= e.status %></span></td>
+                </tr>
+              <% }); %>
+            </tbody>
+          </table>
+        </div>
+      <% } %>
+    </section>
+
+    <section class="card">
+      <div class="card__head">
+        <div><h3>Evaluation Queue</h3><p>Scripts assigned for evaluation</p></div>
+        <div class="card__actions"><a href="/examiner/evaluations" class="btn btn--ghost btn--sm">Open queue <%- icon('arrowRight') %></a></div>
+      </div>
+      <% if (overview.queue.length === 0) { %>
+        <div class="empty"><div class="empty__icon"><%- icon('clipboard') %></div><h4>Queue is empty</h4><p>No answer scripts are awaiting evaluation.</p></div>
+      <% } else { %>
+        <div class="table-wrap">
+          <table class="table">
+            <thead><tr><th scope="col">Student</th><th scope="col">Paper</th><th scope="col" class="text-right">Marks</th><th scope="col">Status</th></tr></thead>
+            <tbody>
+              <% overview.queue.slice(0, 6).forEach((q) => { %>
+                <tr>
+                  <td><div class="table__primary"><%= q.student_name %></div><div class="table__sub mono"><%= q.student_public_id %></div></td>
+                  <td><div class="table__primary"><%= q.code %></div><div class="table__sub"><%= q.exam_title %></div></td>
+                  <td class="text-right table__num"><%= q.marks_awarded !== null ? q.marks_awarded : '—' %></td>
+                  <td><span class="badge badge--<%= q.status === 'flagged' ? 'warning' : q.status === 'evaluated' ? 'success' : 'neutral' %>"><%= q.status %></span></td>
+                </tr>
+              <% }); %>
+            </tbody>
+          </table>
+        </div>
+      <% } %>
+    </section>
+  </div>
+
+  <div class="stack">
+    <section class="card">
+      <div class="card__head"><div><h3>Question Papers</h3></div><div class="card__actions"><a href="/examiner/papers" class="btn btn--ghost btn--sm">Manage</a></div></div>
+      <div class="card__body" style="padding:var(--sp-3)">
+        <% if (overview.papers.length === 0) { %>
+          <p class="small muted text-center" style="padding:var(--sp-4)">No papers authored yet.</p>
+        <% } else { %>
+          <div class="stack stack--sm">
+            <% overview.papers.slice(0, 5).forEach((p) => { %>
+              <div style="padding:var(--sp-3);border-radius:var(--r-md);background:var(--ink-50)">
+                <div class="row row--between">
+                  <span class="small strong"><%= p.code %></span>
+                  <span class="badge badge--<%= p.status === 'approved' ? 'success' : p.status === 'submitted' ? 'info' : 'neutral' %>"><%= p.status %></span>
+                </div>
+                <div class="tiny muted" style="margin-top:2px"><%= p.title %></div>
+              </div>
+            <% }); %>
+          </div>
+        <% } %>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card__head"><div><h3>Notifications</h3></div></div>
+      <div class="card__body" style="padding:var(--sp-4)">
+        <div class="stack stack--sm">
+          <% notifications.slice(0, 4).forEach((n) => { %>
+            <div style="padding:var(--sp-3);border-radius:var(--r-md);background:var(--ink-50);border-left:3px solid <%= n.severity === 'warning' ? 'var(--warning-500)' : n.severity === 'success' ? 'var(--success-500)' : 'var(--navy-400)' %>">
+              <div class="small strong"><%= n.title %></div>
+              <div class="tiny muted mt-2" style="line-height:1.5"><%= n.body %></div>
+              <div class="tiny" style="color:var(--ink-400);margin-top:4px"><%= timeAgo(n.created_at) %></div>
+            </div>
+          <% }); %>
+        </div>
+      </div>
+    </section>
+
+    <div class="security-note">
+      <%- icon('shield-check') %>
+      <span>Your role grants <strong>exam:schedule, paper:author, rubric:manage</strong> and <strong>script:evaluate</strong>. Result publication is not permitted for examiners.</span>
+    </div>
+  </div>
+</div>

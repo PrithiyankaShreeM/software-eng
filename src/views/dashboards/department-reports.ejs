@@ -1,0 +1,68 @@
+<div class="page-head">
+  <div class="page-head__text">
+    <h2>Departmental Performance Report</h2>
+    <p><%= department %> · generated <%= formatDateTime(new Date().toISOString()) %></p>
+  </div>
+  <div class="page-head__actions">
+    <button type="button" class="btn btn--ghost btn--sm" onclick="window.print()"><%- icon('print') %> Print report</button>
+  </div>
+</div>
+
+<section class="card mb-4">
+  <div class="card__head"><div><h3>Summary</h3><p>Key indicators for the current academic cycle</p></div></div>
+  <div class="card__body">
+    <div class="stat-grid" style="margin:0">
+      <div class="stat stat--info"><div class="stat__top"><span class="stat__label">Exams conducted</span><span class="stat__icon"><%- icon('calendar') %></span></div><div class="stat__value"><%= overview.stats.examsConducted %></div></div>
+      <div class="stat stat--gold"><div class="stat__top"><span class="stat__label">Students</span><span class="stat__icon"><%- icon('users') %></span></div><div class="stat__value"><%= overview.stats.students %></div></div>
+      <div class="stat stat--success"><div class="stat__top"><span class="stat__label">Average marks</span><span class="stat__icon"><%- icon('trend-up') %></span></div><div class="stat__value"><%= overview.stats.averageMarks !== null ? overview.stats.averageMarks : '—' %></div></div>
+      <div class="stat"><div class="stat__top"><span class="stat__label">Pass rate</span><span class="stat__icon"><%- icon('target') %></span></div><div class="stat__value"><%= overview.stats.passRate !== null ? overview.stats.passRate + '%' : '—' %></div></div>
+    </div>
+  </div>
+</section>
+
+<section class="card mb-4">
+  <div class="card__head"><div><h3>Paper-wise Analysis</h3><p>Evaluation coverage and average marks per paper</p></div></div>
+  <div class="table-wrap">
+    <table class="table">
+      <thead><tr><th scope="col">Code</th><th scope="col">Paper</th><th scope="col">Semester</th><th scope="col" class="text-right">Evaluated</th><th scope="col" class="text-right">Average</th><th scope="col">Status</th></tr></thead>
+      <tbody>
+        <% overview.exams.forEach((e) => { %>
+          <tr>
+            <td class="mono strong"><%= e.code %></td>
+            <td class="table__primary"><%= e.title %></td>
+            <td class="text-center"><%= e.semester %></td>
+            <td class="text-right table__num"><%= e.evaluated %></td>
+            <td class="text-right table__num"><%= e.avg_marks !== null ? e.avg_marks : '—' %></td>
+            <td><span class="badge badge--<%= e.status === 'completed' ? 'neutral' : 'info' %>"><%= e.status %></span></td>
+          </tr>
+        <% }); %>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="card">
+  <div class="card__head"><div><h3>Consolidated Student Results</h3><p>Most recent published results in the department</p></div></div>
+  <% if (overview.publishedResults.length === 0) { %>
+    <div class="empty"><div class="empty__icon"><%- icon('file') %></div><h4>No published results</h4><p>Results appear once the Controller publishes examination results.</p></div>
+  <% } else { %>
+    <div class="table-wrap">
+      <table class="table">
+        <thead><tr><th scope="col">Student</th><th scope="col">Paper</th><th scope="col" class="text-right">Marks</th><th scope="col" class="text-center">Grade</th><th scope="col" class="text-center">Outcome</th><th scope="col" class="text-right">Published</th></tr></thead>
+        <tbody>
+          <% overview.publishedResults.forEach((r) => { %>
+            <tr>
+              <td class="table__primary"><%= r.student_name %></td>
+              <td><div class="table__primary"><%= r.code %></div><div class="table__sub"><%= r.title %></div></td>
+              <td class="text-right table__num"><%= r.marks %></td>
+              <td class="text-center"><span class="grade grade--<%= r.marks >= 90 ? 'o' : r.marks >= 80 ? 'aplus' : r.marks >= 70 ? 'a' : r.marks >= 60 ? 'bplus' : r.marks >= 50 ? 'b' : r.marks >= 40 ? 'c' : 'f' %>"><%= r.grade %></span></td>
+              <td class="text-center"><span class="badge badge--<%= r.marks >= 40 ? 'success' : 'danger' %>"><%= r.marks >= 40 ? 'Pass' : 'Fail' %></span></td>
+              <td class="text-right tiny muted nowrap"><%= formatDate(r.published_at) %></td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    </div>
+    <div class="card__foot">Computer-generated departmental report · <%= university.name %> · Confidential</div>
+  <% } %>
+</section>

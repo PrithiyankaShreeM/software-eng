@@ -1,0 +1,53 @@
+<div class="page-head">
+  <div class="page-head__text">
+    <h2>Verification History</h2>
+    <p>Every credential check performed by your organisation, most recent first</p>
+  </div>
+  <div class="page-head__actions">
+    <button type="button" class="btn btn--ghost btn--sm" onclick="window.print()"><%- icon('print') %> Print</button>
+  </div>
+</div>
+
+<div class="grid-3 mb-4">
+  <div class="stat stat--success">
+    <div class="stat__top"><span class="stat__label">Valid</span><span class="stat__icon"><%- icon('check-circle') %></span></div>
+    <div class="stat__value"><%= overview.stats.valid %></div>
+  </div>
+  <div class="stat stat--warning">
+    <div class="stat__top"><span class="stat__label">Revoked</span><span class="stat__icon"><%- icon('x-circle') %></span></div>
+    <div class="stat__value"><%= overview.stats.revoked %></div>
+  </div>
+  <div class="stat stat--danger">
+    <div class="stat__top"><span class="stat__label">Not found</span><span class="stat__icon"><%- icon('alert') %></span></div>
+    <div class="stat__value"><%= overview.stats.invalid %></div>
+  </div>
+</div>
+
+<section class="card">
+  <div class="card__head">
+    <div><h3>All Checks</h3><p><%= overview.history.length %> recorded verification<%= overview.history.length === 1 ? '' : 's' %></p></div>
+  </div>
+  <% if (overview.history.length === 0) { %>
+    <div class="empty"><div class="empty__icon"><%- icon('history') %></div><h4>No verification history</h4><p>Perform a credential check to start building your audit trail.</p></div>
+  <% } else { %>
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr><th scope="col">Date &amp; time</th><th scope="col">Credential</th><th scope="col">Result</th><th scope="col">Purpose</th><th scope="col">Source IP</th></tr>
+        </thead>
+        <tbody>
+          <% overview.history.forEach((h) => { %>
+            <tr>
+              <td class="tiny nowrap"><%= formatDateTime(h.created_at) %></td>
+              <td class="mono strong"><%= h.credential_no %></td>
+              <td><span class="badge badge--<%= h.result === 'valid' ? 'success' : h.result === 'revoked' ? 'warning' : 'danger' %>"><%= h.result %></span></td>
+              <td class="tiny"><%= h.purpose || '—' %></td>
+              <td class="tiny mono"><%= h.ip_address || '—' %></td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    </div>
+    <div class="card__foot">Verification history is retained for accountability and is visible only to your organisation and the university.</div>
+  <% } %>
+</section>

@@ -1,0 +1,112 @@
+<%
+  const CATEGORIES = [
+    { key: '', label: 'All events' },
+    { key: 'auth', label: 'Authentication' },
+    { key: 'access', label: 'Authorization' },
+    { key: 'account', label: 'Accounts' },
+    { key: 'role', label: 'Roles' },
+    { key: 'settings', label: 'Settings' },
+    { key: 'credential', label: 'Credentials' },
+  ];
+%>
+
+<div class="page-head">
+  <div class="page-head__text">
+    <h2>System Audit Log</h2>
+    <p>Append-only record of authentication, authorization and account events</p>
+  </div>
+  <div class="page-head__actions">
+    <button type="button" class="btn btn--ghost btn--sm" onclick="window.print()"><%- icon('print') %> Print</button>
+  </div>
+</div>
+
+<div class="stat-grid">
+  <div class="stat stat--info">
+    <div class="stat__top"><span class="stat__label">Total events</span><span class="stat__icon"><%- icon('clipboard') %></span></div>
+    <div class="stat__value"><%= summary.total %></div>
+  </div>
+  <div class="stat">
+    <div class="stat__top"><span class="stat__label">Last 24 hours</span><span class="stat__icon"><%- icon('clock') %></span></div>
+    <div class="stat__value"><%= summary.last24h %></div>
+  </div>
+  <div class="stat stat--warning">
+    <div class="stat__top"><span class="stat__label">Failed (24h)</span><span class="stat__icon"><%- icon('shield-x') %></span></div>
+    <div class="stat__value"><%= summary.failures24h %></div>
+  </div>
+  <div class="stat stat--danger">
+    <div class="stat__top"><span class="stat__label">Critical (24h)</span><span class="stat__icon"><%- icon('alert-triangle') %></span></div>
+    <div class="stat__value"><%= summary.critical24h %></div>
+  </div>
+</div>
+
+<section class="card">
+  <div class="card__head">
+    <div><h3>Event Log</h3><p><%= entries.length %> most recent entries</p></div>
+    <div class="card__actions">
+      <a href="/admin/audit" class="btn btn--<%= !activeCategory ? 'primary' : 'ghost' %> btn--sm">All</a>
+      <% CATEGORIES.slice(1).forEach((c) => { %>
+        <a href="/admin/audit?category=<%= c.key %>" class="btn btn--<%= activeCategory === c.key ? 'primary' : 'ghost' %> btn--sm"><%= c.label %></a>
+      <% }); %>
+    </div>
+  </div>
+
+  <div class="card__body" style="padding:var(--sp-3) var(--sp-4);border-bottom:1px solid var(--ink-100)">
+    <div class="input-wrap input-wrap--icon">
+      <%- icon('search', { className: 'input-wrap__icon' }) %>
+      <input class="input input--sm" type="search" placeholder="Filter events by action, actor, detail or IP…" data-filter-input=".js-audit-table" style="padding-left:36px">
+    </div>
+  </div>
+
+  <% if (entries.length === 0) { %>
+    <div class="empty"><div class="empty__icon"><%- icon('clipboard') %></div><h4>No events recorded</h4></div>
+  <% } else { %>
+    <div class="table-wrap">
+      <table class="table js-audit-table">
+        <thead>
+          <tr>
+            <th scope="col">Timestamp</th>
+            <th scope="col">Action</th>
+            <th scope="col">Actor</th>
+            <th scope="col">Detail</th>
+            <th scope="col">IP</th>
+            <th scope="col">Severity</th>
+            <th scope="col">Outcome</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% entries.forEach((e) => { %>
+            <tr>
+              <td class="tiny nowrap"><%= formatDateTime(e.created_at) %></td>
+              <td>
+                <div class="table__primary mono" style="font-size:0.72rem"><%= e.action %></div>
+                <div class="table__sub"><span class="badge badge--neutral" style="font-size:0.6rem"><%= e.category %></span></div>
+              </td>
+              <td class="tiny">
+                <% if (e.actor_name) { %>
+                  <div class="table__primary" style="font-size:0.78rem"><%= e.actor_name %></div>
+                  <div class="table__sub"><%= e.actor_role || '' %></div>
+                <% } else { %>
+                  <span class="muted">System / Anonymous</span>
+                <% } %>
+              </td>
+              <td class="tiny" style="max-width:360px">
+                <div><%= e.detail || '—' %></div>
+                <% if (e.target) { %><div class="table__sub mono">target: <%= e.target %></div><% } %>
+              </td>
+              <td class="tiny mono"><%= e.ip_address || '—' %></td>
+              <td>
+                <span class="badge badge--<%= e.severity === 'critical' ? 'danger' : e.severity === 'warning' ? 'warning' : 'neutral' %>"><%= e.severity %></span>
+              </td>
+              <td>
+                <span class="badge badge--<%= e.outcome === 'success' ? 'success' : 'danger' %>"><%= e.outcome %></span>
+              </td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    </div>
+    <div class="card__foot">
+      The audit log is append-only: entries are never updated or deleted, including by administrators.
+    </div>
+  <% } %>
+</section>

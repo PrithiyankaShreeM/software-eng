@@ -1,0 +1,30 @@
+{
+  "name": "uniexam-auth",
+  "version": "1.0.0",
+  "description": "UniExam — Centralized Authentication & Role-Based Access Control for a university examination and credential management platform",
+  "main": "server.js",
+  "scripts": {
+    "start": "node --no-warnings=ExperimentalWarning server.js",
+    "dev": "node --no-warnings=ExperimentalWarning --watch server.js",
+    "test": "node --no-warnings=ExperimentalWarning --test tests/*.test.js"
+  },
+  "keywords": [
+    "authentication",
+    "rbac",
+    "university",
+    "examination",
+    "express"
+  ],
+  "author": "Software Engineering Project",
+  "license": "MIT",
+  "dependencies": {
+    "cookie-parser": "^1.4.7",
+    "ejs": "^7.0.2",
+    "express": "^5.3.0",
+    "express-rate-limit": "^8.7.4",
+    "helmet": "^8.3.0"
+  },
+  "engines": {
+    "node": ">=22.5.0"
+  }
+}

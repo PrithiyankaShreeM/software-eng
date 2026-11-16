@@ -1,0 +1,22 @@
+# Dependencies
+node_modules/
+
+# Local environment
+.env
+
+# Runtime database (recreated and re-seeded on first start)
+data/*.db
+data/*.db-journal
+data/*.db-wal
+data/*.db-shm
+
+# Logs and OS noise
+npm-debug.log*
+*.log
+.DS_Store
+Thumbs.db
+
+# Test / tooling output
+coverage/
+.nyc_output/
+.scratch/

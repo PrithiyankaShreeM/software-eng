@@ -1,0 +1,116 @@
+<div class="page-head">
+  <div class="page-head__text">
+    <h2>Evaluation Review</h2>
+    <p>Compare examiner marks against the approved rubric and stage justified corrections</p>
+  </div>
+</div>
+
+<div class="security-note mb-4">
+  <%- icon('shield') %>
+  <span>Corrections are written to a separate moderation record. The examiner's original evaluation remains intact for audit purposes.</span>
+</div>
+
+<section class="card">
+  <div class="card__head">
+    <div><h3>All Evaluations</h3><p><%= overview.flagged.length %> evaluation records</p></div>
+    <div class="card__actions">
+      <div class="input-wrap input-wrap--icon" style="width:220px">
+        <%- icon('search', { className: 'input-wrap__icon' }) %>
+        <input class="input input--sm" type="search" placeholder="Filter by student or paper…" data-filter-input=".js-eval-table" style="padding-left:36px">
+      </div>
+    </div>
+  </div>
+  <% if (overview.flagged.length === 0) { %>
+    <div class="empty"><div class="empty__icon"><%- icon('check-circle') %></div><h4>No evaluations to review</h4><p>Evaluations appear here once examiners submit marks.</p></div>
+  <% } else { %>
+    <div class="table-wrap">
+      <table class="table js-eval-table">
+        <thead>
+          <tr>
+            <th scope="col">Student</th>
+            <th scope="col">Paper</th>
+            <th scope="col" class="text-right">Marks</th>
+            <th scope="col">Status</th>
+            <th scope="col">Examiner remarks</th>
+            <th scope="col" class="text-right">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% overview.flagged.forEach((row) => { const locked = ['moderated','approved'].includes(row.status); %>
+            <tr>
+              <td><div class="table__primary"><%= row.student_name %></div><div class="table__sub mono"><%= row.student_public_id %></div></td>
+              <td><div class="table__primary"><%= row.code %></div><div class="table__sub"><%= row.exam_title %></div></td>
+              <td class="text-right table__num"><%= row.marks_awarded %> <span class="muted tiny">/ <%= row.max_marks %></span></td>
+              <td>
+                <span class="badge badge--<%= row.status === 'flagged' ? 'warning' : row.status === 'evaluated' ? 'success' : row.status === 'moderated' || row.status === 'approved' ? 'info' : 'neutral' %>"><%= row.status %></span>
+              </td>
+              <td class="tiny muted" style="max-width:260px"><%= row.remarks || '—' %></td>
+              <td class="text-right">
+                <% if (locked || row.action_id) { %>
+                  <span class="tiny muted"><%- icon('lock', { size: 11 }) %> <%= row.action_id ? 'In workflow' : 'Finalised' %></span>
+                <% } else { %>
+                  <button type="button" class="btn btn--ghost btn--sm" data-modal-open="discModal"
+                          data-modal-prefill='<%= JSON.stringify({ evaluation_id: row.id, original_marks: row.marks_awarded, student: row.student_name, paper: row.code + " — " + row.exam_title }) %>'>
+                    <%- icon('flag') %> Raise
+                  </button>
+                <% } %>
+              </td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    </div>
+  <% } %>
+</section>
+
+<!-- Raise discrepancy modal (shared with dashboard) -->
+<div class="modal-overlay" id="discModal" role="dialog" aria-modal="true" aria-labelledby="discTitle2">
+  <div class="modal">
+    <form method="post" action="/moderator/discrepancies" id="discForm">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <input type="hidden" name="evaluation_id" id="disc_eval_id">
+      <div class="modal__head">
+        <div><h3 id="discTitle2">Raise a moderation discrepancy</h3><p>The original examiner mark is preserved.</p></div>
+        <button type="button" class="modal__close" data-modal-close aria-label="Close"><%- icon('x') %></button>
+      </div>
+      <div class="modal__body">
+        <div class="portal-note">
+          <%- icon('info') %>
+          <span><strong data-disc-student>—</strong> · <span data-disc-paper>—</span> · current marks: <strong data-disc-marks>—</strong></span>
+        </div>
+        <div class="field">
+          <label class="field__label" for="proposed_marks">Proposed marks</label>
+          <input class="input" id="proposed_marks" name="proposed_marks" type="number" min="0" max="100" step="0.5" required>
+        </div>
+        <div class="field">
+          <label class="field__label" for="reason">Moderation rationale</label>
+          <textarea class="input" id="reason" name="reason" required minlength="15"></textarea>
+        </div>
+      </div>
+      <div class="modal__foot">
+        <button type="button" class="btn btn--ghost" data-modal-close>Cancel</button>
+        <button type="submit" class="btn btn--primary" data-submit-btn>
+          <span class="btn__spinner" aria-hidden="true"></span>
+          <span class="btn__label"><%- icon('flag') %> Stage correction</span>
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('click', function (event) {
+    const trigger = event.target.closest('[data-modal-open="discModal"]');
+    if (!trigger) return;
+    let data = {};
+    try { data = JSON.parse(trigger.getAttribute('data-modal-prefill') || '{}'); } catch (e) { data = {}; }
+    const set = (sel, value) => { const el = document.querySelector(sel); if (el) el.textContent = value; };
+    set('[data-disc-student]', data.student || '—');
+    set('[data-disc-paper]', data.paper || '—');
+    set('[data-disc-marks]', String(data.original_marks ?? '—'));
+    const idField = document.getElementById('disc_eval_id');
+    if (idField) idField.value = data.evaluation_id || '';
+    const proposed = document.getElementById('proposed_marks');
+    if (proposed) proposed.value = data.original_marks ?? '';
+  });
+</script>

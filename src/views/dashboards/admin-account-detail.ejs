@@ -1,0 +1,152 @@
+<div class="page-head">
+  <div class="page-head__text">
+    <h2><%= account.full_name %></h2>
+    <p><span class="mono"><%= account.username %></span> · <%= account.public_id %> · <%= account.email %></p>
+  </div>
+  <div class="page-head__actions">
+    <a href="/admin/accounts" class="btn btn--ghost btn--sm"><%- icon('arrowLeft') %> All accounts</a>
+  </div>
+</div>
+
+<div class="role-banner">
+  <div class="role-banner__icon"><%- icon('user') %></div>
+  <div class="role-banner__body">
+    <div class="role-banner__title"><%= roleDefinitions[account.role] ? roleDefinitions[account.role].label : account.role %></div>
+    <div class="role-banner__desc">
+      <%= account.designation || account.programme || 'No designation recorded' %>
+      <% if (account.department) { %> · <%= account.department %><% } %>
+    </div>
+  </div>
+  <div class="role-banner__meta">
+    <% if (account.is_demo) { %><span class="badge badge--demo">DEMO ACCOUNT</span><% } %>
+    <span class="badge badge--<%= account.status === 'active' ? 'success' : 'neutral' %>"><%= account.status %></span>
+  </div>
+</div>
+
+<div class="grid-main-side">
+  <div class="stack">
+    <section class="card">
+      <div class="card__head"><div><h3>Account Record</h3></div></div>
+      <div class="card__body">
+        <div class="form-grid">
+          <div class="field"><div class="field__label">Username</div><div class="mono strong"><%= account.username %></div></div>
+          <div class="field"><div class="field__label">Public ID</div><div class="mono strong"><%= account.public_id %></div></div>
+          <div class="field"><div class="field__label">Email</div><div class="small"><%= account.email %></div></div>
+          <div class="field"><div class="field__label">Role</div><span class="badge <%= roleDefinitions[account.role] ? roleDefinitions[account.role].badgeClass : 'badge--muted' %>"><%= roleDefinitions[account.role] ? roleDefinitions[account.role].label : account.role %></span></div>
+          <div class="field"><div class="field__label">Status</div><span class="badge badge--<%= account.status === 'active' ? 'success' : 'neutral' %>"><%= account.status %></span></div>
+          <div class="field"><div class="field__label">Failed attempts</div><div class="small"><%= account.failed_attempts %></div></div>
+          <div class="field"><div class="field__label">Last sign-in</div><div class="small"><%= account.last_login_at ? formatDateTime(account.last_login_at) : 'Never' %></div></div>
+          <div class="field"><div class="field__label">Last IP</div><div class="small mono"><%= account.last_login_ip || '—' %></div></div>
+          <div class="field"><div class="field__label">Password changed</div><div class="small"><%= account.password_changed_at ? formatDateTime(account.password_changed_at) : 'Never' %></div></div>
+          <div class="field"><div class="field__label">Created</div><div class="small"><%= formatDateTime(account.created_at) %></div></div>
+        </div>
+      </div>
+      <div class="card__foot">
+        Passwords are stored as scrypt hashes and are never displayed or recoverable, including by administrators.
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card__head"><div><h3>Permissions Granted</h3><p>Derived from the assigned role</p></div></div>
+      <div class="card__body">
+        <% permissionGroups.forEach((group) => { %>
+          <% const relevant = group.permissions.filter((p) => permissions.includes(p.key)); %>
+          <% if (relevant.length === 0) return; %>
+          <div class="perm-group">
+            <div class="perm-group__title"><%= group.label %></div>
+            <div class="perm-grid">
+              <% relevant.forEach((p) => { %>
+                <span class="perm perm--granted" title="<%= p.label %>"><%- icon('check', { size: 9 }) %> <%= p.key %></span>
+              <% }); %>
+            </div>
+          </div>
+        <% }); %>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card__head"><div><h3>Recent Account Activity</h3><p>Audit entries targeting or produced by this account</p></div></div>
+      <% if (auditEntries.length === 0) { %>
+        <div class="empty" style="padding:var(--sp-8)"><p>No audit entries recorded for this account.</p></div>
+      <% } else { %>
+        <div class="table-wrap">
+          <table class="table table--compact">
+            <thead><tr><th scope="col">Time</th><th scope="col">Action</th><th scope="col">Detail</th><th scope="col">Outcome</th></tr></thead>
+            <tbody>
+              <% auditEntries.slice(0, 15).forEach((e) => { %>
+                <tr>
+                  <td class="tiny muted nowrap"><%= timeAgo(e.created_at) %></td>
+                  <td class="mono tiny"><%= e.action %></td>
+                  <td class="tiny"><%= e.detail || '—' %></td>
+                  <td><span class="badge badge--<%= e.outcome === 'success' ? 'success' : 'danger' %>"><%= e.outcome %></span></td>
+                </tr>
+              <% }); %>
+            </tbody>
+          </table>
+        </div>
+      <% } %>
+    </section>
+  </div>
+
+  <div class="stack">
+    <section class="card">
+      <div class="card__head"><div><h3>Actions</h3></div></div>
+      <div class="card__body">
+        <form method="post" action="/admin/accounts/<%= account.id %>/status" class="mb-3" data-confirm="<%= account.status === 'active' ? 'Deactivate this account and revoke all sessions?' : 'Reactivate this account?' %>">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <input type="hidden" name="status" value="<%= account.status === 'active' ? 'inactive' : 'active' %>">
+          <button type="submit" class="btn btn--<%= account.status === 'active' ? 'danger' : 'success' %> w-full">
+            <%- icon(account.status === 'active' ? 'user-x' : 'user-check') %>
+            <%= account.status === 'active' ? 'Deactivate account' : 'Reactivate account' %>
+          </button>
+        </form>
+
+        <form method="post" action="/admin/accounts/<%= account.id %>/reset-password" class="mb-3" data-confirm="Issue a temporary password? Existing sessions will be revoked.">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <button type="submit" class="btn btn--ghost w-full"><%- icon('key') %> Reset password</button>
+        </form>
+
+        <form method="post" action="/admin/accounts/<%= account.id %>/revoke-sessions" class="mb-3" data-confirm="Sign this account out of every device?">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <button type="submit" class="btn btn--ghost w-full"><%- icon('logout') %> Revoke all sessions</button>
+        </form>
+
+        <% if (account.status === 'active') { %>
+          <form method="post" action="/admin/accounts/<%= account.id %>/role" data-confirm="Reassign the role for this account?">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+            <div class="field">
+              <label class="field__label" for="detail_role">Reassign role</label>
+              <select class="input input--sm" id="detail_role" name="role">
+                <% Object.keys(roleDefinitions).forEach((r) => { %>
+                  <option value="<%= r %>" <%= account.role === r ? 'selected' : '' %>><%= roleDefinitions[r].label %></option>
+                <% }); %>
+              </select>
+            </div>
+            <button type="submit" class="btn btn--ghost w-full"><%- icon('shield-check') %> Update role</button>
+          </form>
+        <% } %>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card__head"><div><h3>Active Sessions</h3><p><%= sessions.length %> live</p></div></div>
+      <div class="card__body" style="padding:var(--sp-3)">
+        <% if (sessions.length === 0) { %>
+          <p class="small muted text-center" style="padding:var(--sp-3)">No active sessions.</p>
+        <% } else { %>
+          <div class="stack stack--sm">
+            <% sessions.forEach((s) => { %>
+              <div style="padding:var(--sp-3);border-radius:var(--r-md);background:var(--ink-50)">
+                <div class="row row--between">
+                  <span class="tiny mono"><%= s.ip_address || 'unknown IP' %></span>
+                  <span class="badge badge--<%= s.remember ? 'gold' : 'neutral' %>" style="font-size:0.6rem"><%= s.remember ? 'remembered' : 'session' %></span>
+                </div>
+                <div class="tiny muted mt-2">Seen <%= timeAgo(s.last_seen_at) %> · expires <%= formatDateTime(s.expires_at) %></div>
+              </div>
+            <% }); %>
+          </div>
+        <% } %>
+      </div>
+    </section>
+  </div>
+</div>

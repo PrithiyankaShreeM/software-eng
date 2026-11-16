@@ -1,0 +1,102 @@
+<%
+  const gradeClass = (g) => g === 'O' ? 'o' : g === 'A+' ? 'aplus' : g === 'A' ? 'a' : g === 'B+' ? 'bplus' : g === 'B' ? 'b' : g === 'C' ? 'c' : 'f';
+  const avg = results.length ? Math.round(results.reduce((s, r) => s + r.marks, 0) / results.length) : null;
+  const passed = results.filter((r) => r.marks >= 40).length;
+%>
+
+<div class="page-head">
+  <div class="page-head__text">
+    <h2>Published Results</h2>
+    <p>Marks released by the Controller of Examinations for your registered papers</p>
+  </div>
+  <div class="page-head__actions">
+    <button type="button" class="btn btn--ghost btn--sm" onclick="window.print()"><%- icon('print') %> Print statement</button>
+  </div>
+</div>
+
+<% if (results.length === 0) { %>
+  <div class="card">
+    <div class="empty">
+      <div class="empty__icon"><%- icon('award') %></div>
+      <h4>No results published yet</h4>
+      <p>Results appear here only after the Controller of Examinations approves final marks and formally publishes them. Examiners and moderators cannot release marks to students directly.</p>
+    </div>
+  </div>
+<% } else { %>
+  <div class="stat-grid">
+    <div class="stat stat--info">
+      <div class="stat__top"><span class="stat__label">Papers published</span><span class="stat__icon"><%- icon('file') %></span></div>
+      <div class="stat__value"><%= results.length %></div>
+      <div class="stat__meta">Across all semesters</div>
+    </div>
+    <div class="stat stat--gold">
+      <div class="stat__top"><span class="stat__label">Average marks</span><span class="stat__icon"><%- icon('trend-up') %></span></div>
+      <div class="stat__value"><%= avg %><small>/100</small></div>
+      <div class="stat__meta">Mean of all published papers</div>
+    </div>
+    <div class="stat stat--success">
+      <div class="stat__top"><span class="stat__label">Papers passed</span><span class="stat__icon"><%- icon('check-circle') %></span></div>
+      <div class="stat__value"><%= passed %><small>/ <%= results.length %></small></div>
+      <div class="stat__meta">Pass mark: 40</div>
+    </div>
+    <div class="stat">
+      <div class="stat__top"><span class="stat__label">Best result</span><span class="stat__icon"><%- icon('award') %></span></div>
+      <div class="stat__value"><%= Math.max(...results.map((r) => r.marks)) %><small>/100</small></div>
+      <div class="stat__meta"><%= results.reduce((best, r) => (r.marks > best.marks ? r : best), results[0]).code %></div>
+    </div>
+  </div>
+
+  <section class="card">
+    <div class="card__head">
+      <div><h3>Result Statement</h3><p>Sorted by publication date, most recent first</p></div>
+    </div>
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr>
+            <th scope="col">Code</th>
+            <th scope="col">Paper</th>
+            <th scope="col">Semester</th>
+            <th scope="col" class="text-right">Marks</th>
+            <th scope="col" class="text-center">Grade</th>
+            <th scope="col" class="text-center">Outcome</th>
+            <th scope="col" class="text-right">Published on</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% results.forEach((r) => { %>
+            <tr>
+              <td class="mono strong"><%= r.code %></td>
+              <td>
+                <div class="table__primary"><%= r.title %></div>
+                <div class="table__sub"><%= r.programme %></div>
+              </td>
+              <td class="text-center"><%= r.semester %></td>
+              <td class="text-right table__num"><%= r.marks %> <span class="muted tiny">/ <%= r.max_marks %></span></td>
+              <td class="text-center"><span class="grade grade--<%= gradeClass(r.grade) %>"><%= r.grade %></span></td>
+              <td class="text-center">
+                <% if (r.marks >= 40) { %>
+                  <span class="badge badge--success">Pass</span>
+                <% } else { %>
+                  <span class="badge badge--danger">Fail</span>
+                <% } %>
+              </td>
+              <td class="text-right tiny muted nowrap"><%= formatDate(r.published_at) %></td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    </div>
+    <div class="card__foot">
+      <div class="row row--between">
+        <span>This is a computer-generated statement. Grades: O (≥90) · A+ (≥80) · A (≥70) · B+ (≥60) · B (≥50) · C (≥40) · F (&lt;40).</span>
+        <a href="/student/revaluations" class="tiny">Request revaluation <%- icon('arrowRight', { size: 11 }) %></a>
+      </div>
+    </div>
+  </section>
+
+  <div class="security-note mt-4">
+    <%- icon('info') %>
+    <span>If you believe a mark is incorrect, you may submit a revaluation request from the Revaluation module. Requests are reviewed by the moderation team and finalised by the Controller.</span>
+  </div>
+<% } %>

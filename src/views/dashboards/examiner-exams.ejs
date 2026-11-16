@@ -1,0 +1,113 @@
+<div class="page-head">
+  <div class="page-head__text">
+    <h2>Examination Scheduling</h2>
+    <p>Create examination entries and review the master timetable</p>
+  </div>
+  <div class="page-head__actions">
+    <button type="button" class="btn btn--primary btn--sm" data-modal-open="newExam"><%- icon('plus') %> Schedule examination</button>
+  </div>
+</div>
+
+<section class="card">
+  <div class="card__head">
+    <div><h3>Master Timetable</h3><p><%= exams.length %> examination entries</p></div>
+    <div class="card__actions">
+      <div class="input-wrap input-wrap--icon" style="width:220px">
+        <%- icon('search', { className: 'input-wrap__icon' }) %>
+        <input class="input input--sm" type="search" placeholder="Filter examinations…" data-filter-input=".js-exam-table" data-filter-empty=".js-exam-empty" style="padding-left:36px">
+      </div>
+    </div>
+  </div>
+  <% if (exams.length === 0) { %>
+    <div class="empty"><div class="empty__icon"><%- icon('calendar') %></div><h4>No examinations</h4><p>Schedule the first examination using the button above.</p></div>
+  <% } else { %>
+    <div class="table-wrap">
+      <table class="table js-exam-table">
+        <thead>
+          <tr><th scope="col">Code</th><th scope="col">Paper</th><th scope="col">Department</th><th scope="col">Date</th><th scope="col">Time</th><th scope="col">Hall</th><th scope="col">Status</th></tr>
+        </thead>
+        <tbody>
+          <% exams.forEach((e) => { %>
+            <tr>
+              <td class="mono strong"><%= e.code %></td>
+              <td><div class="table__primary"><%= e.title %></div><div class="table__sub">Sem <%= e.semester %> · <%= e.programme %></div></td>
+              <td class="tiny"><%= e.department %></td>
+              <td class="nowrap"><%= formatDate(e.exam_date) %></td>
+              <td class="mono nowrap"><%= e.start_time %></td>
+              <td class="tiny"><%= e.hall %></td>
+              <td><span class="badge badge--<%= e.status === 'completed' ? 'neutral' : e.status === 'ongoing' ? 'warning' : 'info' %>"><%= e.status %></span></td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+      <div class="js-exam-empty" hidden>
+        <div class="empty"><div class="empty__icon"><%- icon('search') %></div><h4>No matching examinations</h4><p>Adjust your filter terms.</p></div>
+      </div>
+    </div>
+  <% } %>
+</section>
+
+<div class="modal-overlay" id="newExam" role="dialog" aria-modal="true" aria-labelledby="newExamTitle">
+  <div class="modal">
+    <form method="post" action="/examiner/exams">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <div class="modal__head">
+        <div><h3 id="newExamTitle">Schedule an examination</h3><p>Entries appear immediately on student timetables.</p></div>
+        <button type="button" class="modal__close" data-modal-close aria-label="Close"><%- icon('x') %></button>
+      </div>
+      <div class="modal__body">
+        <div class="form-grid">
+          <div class="field">
+            <label class="field__label" for="code">Exam code</label>
+            <input class="input input--mono" id="code" name="code" placeholder="CS506" required>
+          </div>
+          <div class="field">
+            <label class="field__label" for="semester">Semester</label>
+            <select class="input" id="semester" name="semester">
+              <% for (let s = 1; s <= 8; s += 1) { %><option value="<%= s %>" <%= s === 5 ? 'selected' : '' %>><%= s %></option><% } %>
+            </select>
+          </div>
+          <div class="field field--full">
+            <label class="field__label" for="title">Paper title</label>
+            <input class="input" id="title" name="title" placeholder="Compiler Design" required>
+          </div>
+          <div class="field field--full">
+            <label class="field__label" for="programme">Programme</label>
+            <input class="input" id="programme" name="programme" value="B.E. Computer Science" required>
+          </div>
+          <div class="field">
+            <label class="field__label" for="exam_date">Exam date</label>
+            <input class="input" id="exam_date" name="exam_date" type="date" required>
+          </div>
+          <div class="field">
+            <label class="field__label" for="start_time">Start time</label>
+            <input class="input" id="start_time" name="start_time" type="time" value="09:30" required>
+          </div>
+          <div class="field">
+            <label class="field__label" for="duration_mins">Duration (minutes)</label>
+            <input class="input" id="duration_mins" name="duration_mins" type="number" value="180" min="30" max="300">
+          </div>
+          <div class="field">
+            <label class="field__label" for="hall">Examination hall</label>
+            <input class="input" id="hall" name="hall" placeholder="Exam Hall A — Block 1" required>
+          </div>
+          <div class="field field--full">
+            <label class="field__label" for="department">Department</label>
+            <input class="input" id="department" name="department" value="<%= currentUser.department || 'Computer Science & Engineering' %>" required>
+          </div>
+        </div>
+        <div class="security-note">
+          <%- icon('info') %>
+          <span>Scheduling an examination does not publish any marks. Marks become visible to students only after Controller approval and publication.</span>
+        </div>
+      </div>
+      <div class="modal__foot">
+        <button type="button" class="btn btn--ghost" data-modal-close>Cancel</button>
+        <button type="submit" class="btn btn--primary" data-submit-btn>
+          <span class="btn__spinner" aria-hidden="true"></span>
+          <span class="btn__label"><%- icon('calendar') %> Schedule</span>
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

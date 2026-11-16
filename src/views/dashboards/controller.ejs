@@ -1,0 +1,159 @@
+<div class="role-banner">
+  <div class="role-banner__icon"><%- icon('stamp') %></div>
+  <div class="role-banner__body">
+    <div class="role-banner__title">Examination Approval Dashboard — <%= currentUser.fullName %></div>
+    <div class="role-banner__desc">
+      You hold sole authority to approve final marks and publish results. This two-step gate is recorded in the audit log.
+    </div>
+  </div>
+  <div class="role-banner__meta">
+    <span class="badge badge--gold"><%= currentUser.publicId %></span>
+  </div>
+</div>
+
+<div class="stat-grid">
+  <div class="stat stat--warning">
+    <div class="stat__top"><span class="stat__label">Awaiting approval</span><span class="stat__icon"><%- icon('clock') %></span></div>
+    <div class="stat__value"><%= overview.stats.awaitingApproval %></div>
+    <div class="stat__meta">Result sets pending sign-off</div>
+  </div>
+  <div class="stat stat--success">
+    <div class="stat__top"><span class="stat__label">Published</span><span class="stat__icon"><%- icon('check-circle') %></span></div>
+    <div class="stat__value"><%= overview.stats.published %></div>
+    <div class="stat__meta">Visible to students</div>
+  </div>
+  <div class="stat stat--gold">
+    <div class="stat__top"><span class="stat__label">Moderation sign-offs</span><span class="stat__icon"><%- icon('shield-check') %></span></div>
+    <div class="stat__value"><%= overview.stats.pendingModeration %></div>
+    <div class="stat__meta">Endorsed corrections pending</div>
+  </div>
+  <div class="stat stat--info">
+    <div class="stat__top"><span class="stat__label">Evaluated scripts</span><span class="stat__icon"><%- icon('clipboard') %></span></div>
+    <div class="stat__value"><%= overview.stats.totalScripts %></div>
+    <div class="stat__meta">Across all examinations</div>
+  </div>
+</div>
+
+<section class="card mb-4">
+  <div class="card__head">
+    <div>
+      <h3>Result Approval &amp; Publication</h3>
+      <p>Approve final marks, then publish — students see a result only after publication</p>
+    </div>
+  </div>
+  <% if (overview.pending.length === 0) { %>
+    <div class="empty"><div class="empty__icon"><%- icon('stamp') %></div><h4>No completed examinations</h4><p>Result sets appear here once examinations conclude and scripts are evaluated.</p></div>
+  <% } else { %>
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr>
+            <th scope="col">Examination</th>
+            <th scope="col" class="text-right">Scripts</th>
+            <th scope="col" class="text-right">Average</th>
+            <th scope="col" class="text-right">Below 40</th>
+            <th scope="col">Stage</th>
+            <th scope="col" class="text-right">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% overview.pending.forEach((e) => {
+               const stage = e.publication_status || 'awaiting_approval';
+               const stageMeta = stage === 'published'
+                 ? { cls: 'success', label: 'Published' }
+                 : stage === 'approved'
+                   ? { cls: 'info', label: 'Approved — ready to publish' }
+                   : { cls: 'warning', label: 'Awaiting approval' };
+          %>
+            <tr>
+              <td>
+                <div class="table__primary"><%= e.code %> — <%= e.title %></div>
+                <div class="table__sub">Exam <%= formatDate(e.exam_date) %> · <%= e.department %></div>
+              </td>
+              <td class="text-right table__num"><%= e.evaluation_count %></td>
+              <td class="text-right table__num"><%= e.avg_marks !== null ? e.avg_marks : '—' %></td>
+              <td class="text-right table__num"><%= e.fail_count %></td>
+              <td><span class="badge badge--<%= stageMeta.cls %>"><%= stageMeta.label %></span></td>
+              <td class="text-right">
+                <div class="table__actions">
+                  <% if (stage === 'awaiting_approval') { %>
+                    <form method="post" action="/controller/exams/<%= e.id %>/approve" data-confirm="Approve final marks for <%= e.code %>?">
+                      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                      <button type="submit" class="btn btn--primary btn--sm"><%- icon('check') %> Approve marks</button>
+                    </form>
+                  <% } else if (stage === 'approved') { %>
+                    <form method="post" action="/controller/exams/<%= e.id %>/publish" data-confirm="Publish these results to all students? This cannot be undone.">
+                      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                      <button type="submit" class="btn btn--gold btn--sm"><%- icon('send') %> Publish results</button>
+                    </form>
+                  <% } else { %>
+                    <span class="tiny muted"><%- icon('check-circle', { size: 12 }) %> Published <%= formatDate(e.published_at) %></span>
+                  <% } %>
+                </div>
+              </td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    </div>
+    <div class="card__foot">
+      <strong>Two-step gate:</strong> “Approve marks” freezes the mark set; “Publish results” releases it to students. Both steps are audited separately.
+    </div>
+  <% } %>
+</section>
+
+<div class="grid-main-side">
+  <div class="stack">
+    <section class="card">
+      <div class="card__head">
+        <div><h3>Moderation Sign-offs</h3><p>Corrections endorsed by moderators and awaiting your decision</p></div>
+        <div class="card__actions"><a href="/controller/moderation" class="btn btn--ghost btn--sm">Open queue</a></div>
+      </div>
+      <% if (overview.moderation.length === 0) { %>
+        <div class="empty" style="padding:var(--sp-8) var(--sp-5)">
+          <div class="empty__icon"><%- icon('shield-check') %></div>
+          <h4>No corrections awaiting sign-off</h4>
+          <p>Moderator-endorsed corrections appear here before they can affect recorded marks.</p>
+        </div>
+      <% } else { %>
+        <div class="table-wrap">
+          <table class="table">
+            <thead><tr><th scope="col">Student</th><th scope="col">Paper</th><th scope="col" class="text-right">Original</th><th scope="col" class="text-right">Proposed</th><th scope="col" class="text-right">Action</th></tr></thead>
+            <tbody>
+              <% overview.moderation.forEach((m) => { %>
+                <tr>
+                  <td class="table__primary"><%= m.student_name %></td>
+                  <td class="mono"><%= m.code %></td>
+                  <td class="text-right table__num"><%= m.original_marks %></td>
+                  <td class="text-right table__num" style="color:var(--gold-700)"><%= m.proposed_marks %></td>
+                  <td class="text-right"><a href="/controller/moderation" class="btn btn--ghost btn--sm">Review</a></td>
+                </tr>
+              <% }); %>
+            </tbody>
+          </table>
+        </div>
+      <% } %>
+    </section>
+  </div>
+
+  <div class="stack">
+    <section class="card">
+      <div class="card__head"><div><h3>Notifications</h3></div></div>
+      <div class="card__body" style="padding:var(--sp-4)">
+        <div class="stack stack--sm">
+          <% notifications.slice(0, 4).forEach((n) => { %>
+            <div style="padding:var(--sp-3);border-radius:var(--r-md);background:var(--ink-50);border-left:3px solid <%= n.severity === 'warning' ? 'var(--warning-500)' : 'var(--navy-400)' %>">
+              <div class="small strong"><%= n.title %></div>
+              <div class="tiny muted mt-2"><%= n.body %></div>
+            </div>
+          <% }); %>
+        </div>
+      </div>
+    </section>
+
+    <div class="security-note">
+      <%- icon('shield') %>
+      <span>Only the Controller role holds <strong>marks:approve</strong> and <strong>results:publish</strong>. Examiners and moderators cannot publish results.</span>
+    </div>
+  </div>
+</div>

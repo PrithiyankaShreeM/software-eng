@@ -1,0 +1,187 @@
+<div class="role-banner">
+  <div class="role-banner__icon"><%- icon('shield-check') %></div>
+  <div class="role-banner__body">
+    <div class="role-banner__title">Moderation Dashboard — <%= currentUser.fullName %></div>
+    <div class="role-banner__desc">
+      Review evaluations, raise discrepancies and endorse corrections. Original examiner marks are never overwritten directly.
+    </div>
+  </div>
+  <div class="role-banner__meta">
+    <span class="badge badge--gold"><%= currentUser.publicId %></span>
+  </div>
+</div>
+
+<div class="stat-grid">
+  <div class="stat stat--warning">
+    <div class="stat__top"><span class="stat__label">Flagged scripts</span><span class="stat__icon"><%- icon('flag') %></span></div>
+    <div class="stat__value"><%= overview.stats.flagged %></div>
+    <div class="stat__meta">Require a moderation decision</div>
+  </div>
+  <div class="stat stat--info">
+    <div class="stat__top"><span class="stat__label">Awaiting review</span><span class="stat__icon"><%- icon('search') %></span></div>
+    <div class="stat__value"><%= overview.stats.awaitingReview %></div>
+    <div class="stat__meta">Evaluations not yet reviewed</div>
+  </div>
+  <div class="stat stat--gold">
+    <div class="stat__top"><span class="stat__label">Pending corrections</span><span class="stat__icon"><%- icon('refresh') %></span></div>
+    <div class="stat__value"><%= overview.stats.pendingCorrections %></div>
+    <div class="stat__meta">Staged, not yet applied</div>
+  </div>
+  <div class="stat stat--success">
+    <div class="stat__top"><span class="stat__label">Endorsed corrections</span><span class="stat__icon"><%- icon('check-circle') %></span></div>
+    <div class="stat__value"><%= overview.stats.approvedCorrections %></div>
+    <div class="stat__meta">Forwarded to Controller</div>
+  </div>
+</div>
+
+<div class="grid-main-side">
+  <div class="stack">
+    <section class="card">
+      <div class="card__head">
+        <div><h3>Pending Moderation Actions</h3><p>Corrections staged by the moderation team</p></div>
+        <div class="card__actions"><a href="/moderator/review" class="btn btn--ghost btn--sm">Review queue <%- icon('arrowRight') %></a></div>
+      </div>
+      <% if (overview.pendingModeration.length === 0) { %>
+        <div class="empty"><div class="empty__icon"><%- icon('shield-check') %></div><h4>No pending corrections</h4><p>All staged moderation actions have been resolved.</p></div>
+      <% } else { %>
+        <div class="table-wrap">
+          <table class="table">
+            <thead>
+              <tr><th scope="col">Student</th><th scope="col">Paper</th><th scope="col" class="text-right">Original</th><th scope="col" class="text-right">Proposed</th><th scope="col" class="text-right">Action</th></tr>
+            </thead>
+            <tbody>
+              <% overview.pendingModeration.forEach((row) => { %>
+                <tr>
+                  <td><div class="table__primary"><%= row.student_name %></div><div class="table__sub mono"><%= row.student_public_id %></div></td>
+                  <td><div class="table__primary"><%= row.code %></div><div class="table__sub"><%= row.exam_title %></div></td>
+                  <td class="text-right table__num"><%= row.marks_awarded %></td>
+                  <td class="text-right table__num" style="color:var(--gold-700)"><%= row.proposed_marks %></td>
+                  <td class="text-right">
+                    <form method="post" action="/moderator/actions/<%= row.action_id %>/approve" data-confirm="Endorse this correction and forward it to the Controller of Examinations?">
+                      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                      <button type="submit" class="btn btn--primary btn--sm"><%- icon('check') %> Endorse</button>
+                    </form>
+                  </td>
+                </tr>
+              <% }); %>
+            </tbody>
+          </table>
+        </div>
+      <% } %>
+    </section>
+
+    <section class="card">
+      <div class="card__head"><div><h3>Evaluations Awaiting Review</h3><p>Not yet flagged — compare against the rubric</p></div></div>
+      <% if (overview.awaitingReview.length === 0) { %>
+        <div class="empty"><div class="empty__icon"><%- icon('check-circle') %></div><h4>Nothing awaiting review</h4><p>Every evaluation has been reviewed once.</p></div>
+      <% } else { %>
+        <div class="table-wrap">
+          <table class="table">
+            <thead><tr><th scope="col">Student</th><th scope="col">Paper</th><th scope="col" class="text-right">Marks</th><th scope="col" class="text-right">Action</th></tr></thead>
+            <tbody>
+              <% overview.awaitingReview.slice(0, 8).forEach((row) => { %>
+                <tr>
+                  <td><div class="table__primary"><%= row.student_name %></div><div class="table__sub mono"><%= row.student_public_id %></div></td>
+                  <td><div class="table__primary"><%= row.code %></div><div class="table__sub"><%= row.exam_title %></div></td>
+                  <td class="text-right table__num"><%= row.marks_awarded %></td>
+                  <td class="text-right">
+                    <button type="button" class="btn btn--ghost btn--sm" data-modal-open="discModal"
+                            data-modal-prefill='<%= JSON.stringify({ evaluation_id: row.id, original_marks: row.marks_awarded, student: row.student_name, paper: row.code + " — " + row.exam_title }) %>'>
+                      <%- icon('flag') %> Raise discrepancy
+                    </button>
+                  </td>
+                </tr>
+              <% }); %>
+            </tbody>
+          </table>
+        </div>
+      <% } %>
+    </section>
+  </div>
+
+  <div class="stack">
+    <section class="card">
+      <div class="card__head"><div><h3>Recent Decisions</h3></div></div>
+      <div class="card__body" style="padding:var(--sp-4)">
+        <% if (overview.history.length === 0) { %>
+          <p class="small muted text-center" style="padding:var(--sp-3)">No resolved moderation actions yet.</p>
+        <% } else { %>
+          <div class="timeline">
+            <% overview.history.slice(0, 6).forEach((h) => { %>
+              <div class="timeline__item <%= h.status === 'approved' ? 'timeline__item--done' : h.status === 'rejected' ? 'timeline__item--alert' : '' %>">
+                <div class="timeline__dot"></div>
+                <div class="timeline__title"><%= h.code %> · <%= h.student_name %></div>
+                <div class="timeline__meta">
+                  <%= h.original_marks %> → <%= h.proposed_marks %> marks ·
+                  <span class="badge badge--<%= h.status === 'approved' ? 'success' : 'danger' %>"><%= h.status %></span>
+                </div>
+                <div class="tiny" style="color:var(--ink-400);margin-top:2px"><%= timeAgo(h.resolved_at) %></div>
+              </div>
+            <% }); %>
+          </div>
+        <% } %>
+      </div>
+    </section>
+
+    <div class="security-note">
+      <%- icon('shield') %>
+      <span><strong>Separation of duties:</strong> your endorsement forwards a correction to the Controller. Only the Controller can apply it to the recorded mark.</span>
+    </div>
+  </div>
+</div>
+
+<!-- Raise discrepancy modal -->
+<div class="modal-overlay" id="discModal" role="dialog" aria-modal="true" aria-labelledby="discTitle">
+  <div class="modal">
+    <form method="post" action="/moderator/discrepancies" id="discForm">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <input type="hidden" name="evaluation_id" id="disc_eval_id">
+      <div class="modal__head">
+        <div><h3 id="discTitle">Raise a moderation discrepancy</h3><p>The original examiner mark is preserved; a correction is staged instead.</p></div>
+        <button type="button" class="modal__close" data-modal-close aria-label="Close"><%- icon('x') %></button>
+      </div>
+      <div class="modal__body">
+        <div class="portal-note">
+          <%- icon('info') %>
+          <span><strong data-disc-student>—</strong> · <span data-disc-paper>—</span> · current marks: <strong data-disc-marks>—</strong></span>
+        </div>
+        <div class="field">
+          <label class="field__label" for="proposed_marks">Proposed marks</label>
+          <input class="input" id="proposed_marks" name="proposed_marks" type="number" min="0" max="100" step="0.5" required>
+        </div>
+        <div class="field">
+          <label class="field__label" for="reason">Moderation rationale</label>
+          <textarea class="input" id="reason" name="reason" required minlength="15" placeholder="Explain which rubric item was misapplied and why the correction is justified."></textarea>
+        </div>
+        <div class="security-note">
+          <%- icon('shield-check') %>
+          <span>This action requires Controller sign-off before any recorded mark changes.</span>
+        </div>
+      </div>
+      <div class="modal__foot">
+        <button type="button" class="btn btn--ghost" data-modal-close>Cancel</button>
+        <button type="submit" class="btn btn--primary" data-submit-btn>
+          <span class="btn__spinner" aria-hidden="true"></span>
+          <span class="btn__label"><%- icon('flag') %> Stage correction</span>
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('click', function (event) {
+    const trigger = event.target.closest('[data-modal-open="discModal"]');
+    if (!trigger) return;
+    let data = {};
+    try { data = JSON.parse(trigger.getAttribute('data-modal-prefill') || '{}'); } catch (e) { data = {}; }
+    const set = (sel, value) => { const el = document.querySelector(sel); if (el) el.textContent = value; };
+    set('[data-disc-student]', data.student || '—');
+    set('[data-disc-paper]', data.paper || '—');
+    set('[data-disc-marks]', String(data.original_marks ?? '—'));
+    const idField = document.getElementById('disc_eval_id');
+    if (idField) idField.value = data.evaluation_id || '';
+    const proposed = document.getElementById('proposed_marks');
+    if (proposed) proposed.value = data.original_marks ?? '';
+  });
+</script>

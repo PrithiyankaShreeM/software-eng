@@ -1,0 +1,95 @@
+<div class="page-head">
+  <div class="page-head__text">
+    <h2>Roles &amp; Permissions</h2>
+    <p>The authoritative permission matrix — every route in the platform derives from this table</p>
+  </div>
+</div>
+
+<div class="security-note mb-4">
+  <%- icon('shield-check') %>
+  <span>Permissions are fixed per role by design. No user can grant themselves a role; only an administrator can assign roles, and every assignment is audited.</span>
+</div>
+
+<section class="card mb-4">
+  <div class="card__head">
+    <div><h3>Role Summary</h3><p>What each role can do and where it lands after sign-in</p></div>
+  </div>
+  <div class="table-wrap">
+    <table class="table">
+      <thead>
+        <tr>
+          <th scope="col">Role</th>
+          <th scope="col">Dashboard</th>
+          <th scope="col" class="text-right">Permissions</th>
+          <th scope="col">Scope</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% Object.keys(roleDefinitions).forEach((roleKey) => {
+             const def = roleDefinitions[roleKey];
+             const perms = rolePermissions[roleKey] || [];
+        %>
+          <tr>
+            <td><span class="badge <%= def.badgeClass %>"><%= def.label %></span></td>
+            <td class="mono tiny"><%= def.dashboardPath %></td>
+            <td class="text-right table__num"><%= perms.length %></td>
+            <td class="tiny muted"><%= def.description %></td>
+          </tr>
+        <% }); %>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<% permissionGroups.forEach((group) => { %>
+  <section class="card mb-4">
+    <div class="card__head">
+      <div><h3><%= group.label %></h3><p><%= group.permissions.length %> permissions in this domain</p></div>
+    </div>
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr>
+            <th scope="col" style="min-width:240px">Permission</th>
+            <% Object.keys(roleDefinitions).forEach((roleKey) => { %>
+              <th scope="col" class="text-center" style="font-size:0.6rem"><%= roleDefinitions[roleKey].shortLabel %></th>
+            <% }); %>
+          </tr>
+        </thead>
+        <tbody>
+          <% group.permissions.forEach((perm) => { %>
+            <tr>
+              <td>
+                <div class="table__primary mono" style="font-size:0.75rem"><%= perm.key %></div>
+                <div class="table__sub"><%= perm.label %></div>
+              </td>
+              <% Object.keys(roleDefinitions).forEach((roleKey) => {
+                   const granted = (rolePermissions[roleKey] || []).includes(perm.key);
+              %>
+                <td class="text-center">
+                  <% if (granted) { %>
+                    <span class="badge badge--success" style="padding:1px 4px"><%- icon('check', { size: 11 }) %></span>
+                  <% } else { %>
+                    <span class="tiny" style="color:var(--ink-300)">—</span>
+                  <% } %>
+                </td>
+              <% }); %>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    </div>
+  </section>
+<% }); %>
+
+<section class="card">
+  <div class="card__head"><div><h3>Separation of Duties</h3><p>Controls that prevent any single role from completing a sensitive workflow alone</p></div></div>
+  <div class="card__body">
+    <div class="stack">
+      <div class="security-note"><%- icon('check-circle') %><span><strong>Evaluation → Moderation → Approval:</strong> an examiner records marks, a moderator endorses any correction, and only the Controller can apply it.</span></div>
+      <div class="security-note"><%- icon('check-circle') %><span><strong>Publication:</strong> <span class="mono">results:publish</span> is held exclusively by the Controller of Examinations.</span></div>
+      <div class="security-note"><%- icon('check-circle') %><span><strong>Privilege granting:</strong> <span class="mono">roles:assign</span> is held exclusively by the Administrator, and the last administrator cannot be demoted.</span></div>
+      <div class="security-note"><%- icon('check-circle') %><span><strong>External boundary:</strong> verifiers hold only credential permissions — no examination-record permission exists in their role.</span></div>
+    </div>
+  </div>
+</section>

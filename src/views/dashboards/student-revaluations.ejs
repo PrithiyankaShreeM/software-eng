@@ -1,0 +1,167 @@
+<%
+  const statusMeta = {
+    submitted: { cls: 'info', label: 'Submitted', icon: 'send' },
+    under_review: { cls: 'warning', label: 'Under review', icon: 'clock' },
+    completed: { cls: 'success', label: 'Completed', icon: 'check-circle' },
+    rejected: { cls: 'danger', label: 'Rejected', icon: 'x-circle' },
+  };
+%>
+
+<div class="page-head">
+  <div class="page-head__text">
+    <h2>Revaluation Requests</h2>
+    <p>Submit a revaluation for an evaluated answer script and track its progress</p>
+  </div>
+  <div class="page-head__actions">
+    <% if (candidates.length > 0) { %>
+      <button type="button" class="btn btn--primary btn--sm" data-modal-open="newRevaluation"><%- icon('plus') %> New request</button>
+    <% } %>
+  </div>
+</div>
+
+<div class="stat-grid">
+  <div class="stat stat--info">
+    <div class="stat__top"><span class="stat__label">Total requests</span><span class="stat__icon"><%- icon('clipboard') %></span></div>
+    <div class="stat__value"><%= requests.length %></div>
+    <div class="stat__meta">All revaluation requests</div>
+  </div>
+  <div class="stat stat--warning">
+    <div class="stat__top"><span class="stat__label">Open</span><span class="stat__icon"><%- icon('clock') %></span></div>
+    <div class="stat__value"><%= requests.filter((r) => ['submitted','under_review'].includes(r.status)).length %></div>
+    <div class="stat__meta">Awaiting a decision</div>
+  </div>
+  <div class="stat stat--success">
+    <div class="stat__top"><span class="stat__label">Completed</span><span class="stat__icon"><%- icon('check-circle') %></span></div>
+    <div class="stat__value"><%= requests.filter((r) => r.status === 'completed').length %></div>
+    <div class="stat__meta">Revaluation finalised</div>
+  </div>
+  <div class="stat">
+    <div class="stat__top"><span class="stat__label">Eligible papers</span><span class="stat__icon"><%- icon('file') %></span></div>
+    <div class="stat__value"><%= candidates.length %></div>
+    <div class="stat__meta">Evaluated, no open request</div>
+  </div>
+</div>
+
+<section class="card mb-4">
+  <div class="card__head">
+    <div><h3>My Requests</h3><p>Track status and outcomes</p></div>
+  </div>
+  <% if (requests.length === 0) { %>
+    <div class="empty">
+      <div class="empty__icon"><%- icon('refresh') %></div>
+      <h4>No revaluation requests</h4>
+      <p>
+        <% if (candidates.length > 0) { %>
+          You have <%= candidates.length %> evaluated paper<%= candidates.length === 1 ? '' : 's' %> eligible for revaluation. Use “New request” to submit one.
+        <% } else { %>
+          There are no evaluated papers eligible for revaluation at present.
+        <% } %>
+      </p>
+    </div>
+  <% } else { %>
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr>
+            <th scope="col">Paper</th>
+            <th scope="col">Submitted</th>
+            <th scope="col">Reason</th>
+            <th scope="col">Status</th>
+            <th scope="col">Decision</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% requests.forEach((r) => { const meta = statusMeta[r.status] || statusMeta.submitted; %>
+            <tr>
+              <td>
+                <div class="table__primary"><%= r.code %> — <%= r.title %></div>
+                <div class="table__sub">Semester <%= r.semester %> · Exam <%= formatDate(r.exam_date) %></div>
+              </td>
+              <td class="tiny muted nowrap"><%= formatDate(r.created_at) %></td>
+              <td class="tiny" style="max-width:280px"><%= r.reason %></td>
+              <td><span class="badge badge--<%= meta.cls %>"><%- icon(meta.icon) %> <%= meta.label %></span></td>
+              <td class="tiny muted"><%= r.decision_note || '—' %></td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    </div>
+  <% } %>
+</section>
+
+<!-- Progress explanation -->
+<section class="card">
+  <div class="card__head"><div><h3>How Revaluation Works</h3><p>Each request follows a governed, auditable workflow</p></div></div>
+  <div class="card__body">
+    <div class="timeline">
+      <div class="timeline__item timeline__item--done">
+        <div class="timeline__dot"></div>
+        <div class="timeline__title">1 · Request submitted</div>
+        <div class="timeline__meta">You submit a reason; the request is timestamped and logged.</div>
+      </div>
+      <div class="timeline__item">
+        <div class="timeline__dot"></div>
+        <div class="timeline__title">2 · Moderator review</div>
+        <div class="timeline__meta">A moderator re-checks the script against the approved rubric and records any discrepancy.</div>
+      </div>
+      <div class="timeline__item">
+        <div class="timeline__dot"></div>
+        <div class="timeline__title">3 · Controller decision</div>
+        <div class="timeline__meta">The Controller of Examinations authorises any mark correction before it is recorded.</div>
+      </div>
+      <div class="timeline__item">
+        <div class="timeline__dot"></div>
+        <div class="timeline__title">4 · Outcome published</div>
+        <div class="timeline__meta">The decision and any revised marks appear here and in your academic record.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- New request modal -->
+<div class="modal-overlay" id="newRevaluation" role="dialog" aria-modal="true" aria-labelledby="newRevalTitle">
+  <div class="modal">
+    <form method="post" action="/student/revaluations">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <div class="modal__head">
+        <div>
+          <h3 id="newRevalTitle">Submit a revaluation request</h3>
+          <p>Select an evaluated paper and explain why a re-check is required.</p>
+        </div>
+        <button type="button" class="modal__close" data-modal-close aria-label="Close"><%- icon('x') %></button>
+      </div>
+      <div class="modal__body">
+        <% if (candidates.length === 0) { %>
+          <div class="alert alert--info"><%- icon('info') %><div class="alert__body">No papers are currently eligible for revaluation.</div></div>
+        <% } else { %>
+          <div class="field">
+            <label class="field__label" for="exam_id">Examination paper</label>
+            <select class="input" id="exam_id" name="exam_id" required>
+              <option value="">Choose a paper…</option>
+              <% candidates.forEach((c) => { %>
+                <option value="<%= c.id %>"><%= c.code %> — <%= c.title %><% if (c.marks !== null && c.marks !== undefined) { %> (awarded <%= c.marks %>)<% } %></option>
+              <% }); %>
+            </select>
+          </div>
+          <div class="field">
+            <label class="field__label" for="reason">Reason for revaluation</label>
+            <textarea class="input" id="reason" name="reason" required minlength="20" maxlength="1000"
+                      placeholder="Describe which question(s) you believe were not marked in accordance with the rubric (minimum 20 characters)."></textarea>
+            <div class="field__hint">Be specific — precise reasons are resolved faster by the moderation team.</div>
+          </div>
+          <div class="security-note">
+            <%- icon('info') %>
+            <span>Submitting a revaluation does not change your mark. Only a Controller-authorised correction can amend a recorded result.</span>
+          </div>
+        <% } %>
+      </div>
+      <div class="modal__foot">
+        <button type="button" class="btn btn--ghost" data-modal-close>Cancel</button>
+        <button type="submit" class="btn btn--primary" <%= candidates.length === 0 ? 'disabled' : '' %> data-submit-btn>
+          <span class="btn__spinner" aria-hidden="true"></span>
+          <span class="btn__label"><%- icon('send') %> Submit request</span>
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

@@ -1,0 +1,142 @@
+<div class="role-banner">
+  <div class="role-banner__icon"><%- icon('chart') %></div>
+  <div class="role-banner__body">
+    <div class="role-banner__title">Department Analytics — <%= department %></div>
+    <div class="role-banner__desc">
+      Read-only oversight of departmental examinations, student performance and results.
+      <%= currentUser.fullName %> · <%= currentUser.designation || 'Department Head' %>
+    </div>
+  </div>
+  <div class="role-banner__meta">
+    <span class="badge badge--gold"><%= currentUser.publicId %></span>
+  </div>
+</div>
+
+<div class="stat-grid">
+  <div class="stat stat--info">
+    <div class="stat__top"><span class="stat__label">Exams conducted</span><span class="stat__icon"><%- icon('calendar') %></span></div>
+    <div class="stat__value"><%= overview.stats.examsConducted %></div>
+    <div class="stat__meta"><%= overview.stats.examsScheduled %> scheduled ahead</div>
+  </div>
+  <div class="stat stat--gold">
+    <div class="stat__top"><span class="stat__label">Students</span><span class="stat__icon"><%- icon('users') %></span></div>
+    <div class="stat__value"><%= overview.stats.students %></div>
+    <div class="stat__meta">Enrolled in this department</div>
+  </div>
+  <div class="stat stat--success">
+    <div class="stat__top"><span class="stat__label">Average marks</span><span class="stat__icon"><%- icon('trend-up') %></span></div>
+    <div class="stat__value"><%= overview.stats.averageMarks !== null ? overview.stats.averageMarks : '—' %><%= overview.stats.averageMarks !== null ? '/100' : '' %></div>
+    <div class="stat__meta">Across published results</div>
+  </div>
+  <div class="stat <%= overview.stats.passRate !== null && overview.stats.passRate >= 75 ? 'stat--success' : 'stat--warning' %>">
+    <div class="stat__top"><span class="stat__label">Pass rate</span><span class="stat__icon"><%- icon('target') %></span></div>
+    <div class="stat__value"><%= overview.stats.passRate !== null ? overview.stats.passRate + '%' : '—' %></div>
+    <div class="stat__meta"><%= overview.stats.resultsPublished %> published results</div>
+  </div>
+</div>
+
+<div class="grid-main-side">
+  <div class="stack">
+    <section class="card">
+      <div class="card__head">
+        <div><h3>Departmental Examinations</h3><p>Scheduling and performance by paper</p></div>
+      </div>
+      <% if (overview.exams.length === 0) { %>
+        <div class="empty"><div class="empty__icon"><%- icon('calendar') %></div><h4>No examinations recorded</h4><p>Examinations for this department will appear here.</p></div>
+      <% } else { %>
+        <div class="table-wrap">
+          <table class="table">
+            <thead>
+              <tr><th scope="col">Paper</th><th scope="col">Date</th><th scope="col" class="text-right">Evaluated</th><th scope="col" class="text-right">Average</th><th scope="col">Status</th></tr>
+            </thead>
+            <tbody>
+              <% overview.exams.forEach((e) => { %>
+                <tr>
+                  <td><div class="table__primary"><%= e.code %> — <%= e.title %></div><div class="table__sub">Sem <%= e.semester %> · <%= e.programme %></div></td>
+                  <td class="nowrap tiny"><%= formatDate(e.exam_date) %></td>
+                  <td class="text-right table__num"><%= e.evaluated %></td>
+                  <td class="text-right table__num"><%= e.avg_marks !== null ? e.avg_marks : '—' %></td>
+                  <td><span class="badge badge--<%= e.status === 'completed' ? 'neutral' : 'info' %>"><%= e.status %></span></td>
+                </tr>
+              <% }); %>
+            </tbody>
+          </table>
+        </div>
+      <% } %>
+    </section>
+
+    <section class="card">
+      <div class="card__head">
+        <div><h3>Student Performance</h3><p>Average across published results per student</p></div>
+        <div class="card__actions">
+          <input class="input input--sm" type="search" placeholder="Filter students…" data-filter-input=".js-student-table" style="width:200px">
+        </div>
+      </div>
+      <% if (overview.students.length === 0) { %>
+        <div class="empty"><div class="empty__icon"><%- icon('users') %></div><h4>No students enrolled</h4></div>
+      <% } else { %>
+        <div class="table-wrap">
+          <table class="table js-student-table">
+            <thead><tr><th scope="col">Student</th><th scope="col">Programme</th><th scope="col" class="text-right">Results</th><th scope="col" class="text-right">Average</th><th scope="col">Indicator</th></tr></thead>
+            <tbody>
+              <% overview.students.forEach((s) => {
+                   const avg = s.avg_marks;
+                   const cls = avg === null ? 'neutral' : avg >= 75 ? 'success' : avg >= 50 ? 'info' : 'warning';
+              %>
+                <tr>
+                  <td><div class="table__primary"><%= s.full_name %></div><div class="table__sub mono"><%= s.public_id %></div></td>
+                  <td class="tiny"><%= s.programme %></td>
+                  <td class="text-right table__num"><%= s.results_count %></td>
+                  <td class="text-right table__num"><%= avg !== null ? avg : '—' %></td>
+                  <td><span class="badge badge--<%= cls %>"><%= avg === null ? 'No results' : avg >= 75 ? 'Strong' : avg >= 50 ? 'On track' : 'Needs attention' %></span></td>
+                </tr>
+              <% }); %>
+            </tbody>
+          </table>
+        </div>
+      <% } %>
+    </section>
+  </div>
+
+  <div class="stack">
+    <section class="card">
+      <div class="card__head"><div><h3>Recent Published Results</h3></div><div class="card__actions"><a href="/department/reports" class="btn btn--ghost btn--sm">Report</a></div></div>
+      <div class="card__body" style="padding:var(--sp-3)">
+        <% if (overview.publishedResults.length === 0) { %>
+          <p class="small muted text-center" style="padding:var(--sp-4)">No published results for this department yet.</p>
+        <% } else { %>
+          <div class="stack stack--sm">
+            <% overview.publishedResults.slice(0, 7).forEach((r) => { %>
+              <div style="padding:var(--sp-3);border-radius:var(--r-md);background:var(--ink-50)" class="row row--between">
+                <div>
+                  <div class="small strong"><%= r.student_name %></div>
+                  <div class="tiny muted"><%= r.code %> — <%= r.title %></div>
+                </div>
+                <span class="grade grade--<%= r.marks >= 90 ? 'o' : r.marks >= 80 ? 'aplus' : r.marks >= 70 ? 'a' : r.marks >= 60 ? 'bplus' : r.marks >= 50 ? 'b' : r.marks >= 40 ? 'c' : 'f' %>"><%= r.grade %></span>
+              </div>
+            <% }); %>
+          </div>
+        <% } %>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card__head"><div><h3>Notifications</h3></div></div>
+      <div class="card__body" style="padding:var(--sp-4)">
+        <div class="stack stack--sm">
+          <% notifications.slice(0, 3).forEach((n) => { %>
+            <div style="padding:var(--sp-3);border-radius:var(--r-md);background:var(--ink-50)">
+              <div class="small strong"><%= n.title %></div>
+              <div class="tiny muted mt-2"><%= n.body %></div>
+            </div>
+          <% }); %>
+        </div>
+      </div>
+    </section>
+
+    <div class="security-note">
+      <%- icon('shield-check') %>
+      <span>Department heads have read-only oversight. Approving marks and publishing results remain exclusive to the Controller of Examinations.</span>
+    </div>
+  </div>
+</div>

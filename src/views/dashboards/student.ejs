@@ -1,0 +1,236 @@
+<!-- Role banner -->
+<div class="role-banner">
+  <div class="role-banner__icon"><%- icon('mortarboard') %></div>
+  <div class="role-banner__body">
+    <div class="role-banner__title">Welcome back, <%= currentUser.fullName %></div>
+    <div class="role-banner__desc">
+      <%= currentUser.programme || 'Undergraduate programme' %> · <%= currentUser.department || 'Department not set' %>
+      <% if (currentUser.isDemo) { %> — this is a demonstration account with synthetic data. <% } %>
+    </div>
+  </div>
+  <div class="role-banner__meta">
+    <span class="badge badge--gold"><%= currentUser.publicId %></span>
+  </div>
+</div>
+
+<!-- Key figures -->
+<div class="stat-grid">
+  <div class="stat stat--info">
+    <div class="stat__top">
+      <span class="stat__label">Upcoming exams</span>
+      <span class="stat__icon"><%- icon('calendar') %></span>
+    </div>
+    <div class="stat__value"><%= overview.stats.upcomingExams %></div>
+    <div class="stat__meta">
+      <% if (overview.stats.daysToNext !== null) { %>
+        Next paper in <strong><%= overview.stats.daysToNext %> day<%= overview.stats.daysToNext === 1 ? '' : 's' %></strong>
+      <% } else { %>
+        No papers scheduled
+      <% } %>
+    </div>
+  </div>
+
+  <div class="stat stat--success">
+    <div class="stat__top">
+      <span class="stat__label">Published results</span>
+      <span class="stat__icon"><%- icon('award') %></span>
+    </div>
+    <div class="stat__value"><%= overview.stats.publishedResults %></div>
+    <div class="stat__meta">Released by the Controller</div>
+  </div>
+
+  <div class="stat stat--gold">
+    <div class="stat__top">
+      <span class="stat__label">Average marks</span>
+      <span class="stat__icon"><%- icon('trend-up') %></span>
+    </div>
+    <div class="stat__value"><%= overview.stats.averageMarks !== null ? overview.stats.averageMarks : '—' %><% if (overview.stats.averageMarks !== null) { %><small>/100</small><% } %></div>
+    <div class="stat__meta">Across published papers</div>
+  </div>
+
+  <div class="stat <%= overview.stats.pendingRevaluations > 0 ? 'stat--warning' : '' %>">
+    <div class="stat__top">
+      <span class="stat__label">Open revaluations</span>
+      <span class="stat__icon"><%- icon('refresh') %></span>
+    </div>
+    <div class="stat__value"><%= overview.stats.pendingRevaluations %></div>
+    <div class="stat__meta">
+      <a href="/student/revaluations">Track requests →</a>
+    </div>
+  </div>
+</div>
+
+<div class="grid-main-side">
+  <!-- Left column -->
+  <div class="stack">
+    <!-- Next examinations -->
+    <section class="card">
+      <div class="card__head">
+        <div>
+          <h3>Upcoming Examinations</h3>
+          <p>Papers you are registered for, in date order</p>
+        </div>
+        <div class="card__actions">
+          <a href="/student/schedule" class="btn btn--ghost btn--sm">Full timetable <%- icon('arrowRight') %></a>
+        </div>
+      </div>
+      <% if (overview.upcoming.length === 0) { %>
+        <div class="empty">
+          <div class="empty__icon"><%- icon('calendar') %></div>
+          <h4>No upcoming examinations</h4>
+          <p>Your examination timetable will appear here as soon as it is published by the examination office.</p>
+        </div>
+      <% } else { %>
+        <div class="table-wrap">
+          <table class="table">
+            <thead>
+              <tr>
+                <th scope="col">Paper</th>
+                <th scope="col">Date</th>
+                <th scope="col">Time</th>
+                <th scope="col">Hall</th>
+                <th scope="col" class="text-right">Duration</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% overview.upcoming.forEach((exam) => { %>
+                <tr>
+                  <td>
+                    <div class="table__primary"><%= exam.code %> — <%= exam.title %></div>
+                    <div class="table__sub">Semester <%= exam.semester %> · <%= exam.programme %></div>
+                  </td>
+                  <td class="nowrap"><%= formatDate(exam.exam_date) %></td>
+                  <td class="nowrap mono"><%= exam.start_time %></td>
+                  <td class="tiny"><%= exam.hall %></td>
+                  <td class="text-right nowrap"><%= exam.duration_mins %> min</td>
+                </tr>
+              <% }); %>
+            </tbody>
+          </table>
+        </div>
+      <% } %>
+    </section>
+
+    <!-- Recent results -->
+    <section class="card">
+      <div class="card__head">
+        <div>
+          <h3>Recent Results</h3>
+          <p>Marks published by the Office of the Controller</p>
+        </div>
+        <div class="card__actions">
+          <a href="/student/results" class="btn btn--ghost btn--sm">All results <%- icon('arrowRight') %></a>
+        </div>
+      </div>
+      <% if (overview.results.length === 0) { %>
+        <div class="empty">
+          <div class="empty__icon"><%- icon('award') %></div>
+          <h4>No results published yet</h4>
+          <p>Results appear here once the Controller of Examinations approves and publishes them.</p>
+        </div>
+      <% } else { %>
+        <div class="table-wrap">
+          <table class="table">
+            <thead>
+              <tr>
+                <th scope="col">Paper</th>
+                <th scope="col" class="text-right">Marks</th>
+                <th scope="col" class="text-center">Grade</th>
+                <th scope="col" class="text-right">Published</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% overview.results.slice(0, 6).forEach((r) => { %>
+                <tr>
+                  <td>
+                    <div class="table__primary"><%= r.code %> — <%= r.title %></div>
+                    <div class="table__sub">Semester <%= r.semester %></div>
+                  </td>
+                  <td class="text-right table__num"><%= r.marks %> <span class="muted tiny">/ <%= r.max_marks %></span></td>
+                  <td class="text-center">
+                    <span class="grade grade--<%= r.grade === 'O' ? 'o' : r.grade === 'A+' ? 'aplus' : r.grade === 'A' ? 'a' : r.grade.startsWith('B') ? (r.grade === 'B+' ? 'bplus' : 'b') : r.grade === 'C' ? 'c' : 'f' %>"><%= r.grade %></span>
+                  </td>
+                  <td class="text-right tiny muted nowrap"><%= formatDate(r.published_at) %></td>
+                </tr>
+              <% }); %>
+            </tbody>
+          </table>
+        </div>
+        <div class="card__foot">
+          Grades: O (≥90) · A+ (≥80) · A (≥70) · B+ (≥60) · B (≥50) · C (≥40) · F (&lt;40)
+        </div>
+      <% } %>
+    </section>
+  </div>
+
+  <!-- Right column -->
+  <div class="stack">
+    <!-- Next exam spotlight -->
+    <% if (overview.stats.nextExam) { const next = overview.stats.nextExam; %>
+      <section class="card">
+        <div class="card__head">
+          <div><h3>Next Examination</h3></div>
+          <div class="card__actions"><span class="badge badge--info"><span class="badge-dot badge-dot--pulse"></span> In <%= overview.stats.daysToNext %> day<%= overview.stats.daysToNext === 1 ? '' : 's' %></span></div>
+        </div>
+        <div class="card__body">
+          <div class="strong" style="font-size:1rem"><%= next.code %></div>
+          <div class="small muted mb-3"><%= next.title %></div>
+          <div class="stack stack--sm">
+            <div class="row small"><%- icon('calendar', { size: 15, className: 'muted' }) %> <span><%= formatDate(next.exam_date) %></span></div>
+            <div class="row small"><%- icon('clock', { size: 15, className: 'muted' }) %> <span><%= next.start_time %> · <%= next.duration_mins %> minutes</span></div>
+            <div class="row small"><%- icon('home', { size: 15, className: 'muted' }) %> <span><%= next.hall %></span></div>
+          </div>
+        </div>
+        <div class="card__foot">
+          Carry your hall ticket and university identity card to every examination.
+        </div>
+      </section>
+    <% } %>
+
+    <!-- Notifications -->
+    <section class="card">
+      <div class="card__head">
+        <div><h3>Notifications</h3></div>
+        <div class="card__actions">
+          <span class="badge badge--neutral"><%= notifications.length %></span>
+        </div>
+      </div>
+      <% if (notifications.length === 0) { %>
+        <div class="empty" style="padding:var(--sp-8) var(--sp-5)">
+          <div class="empty__icon"><%- icon('bell') %></div>
+          <p>You have no new notifications.</p>
+        </div>
+      <% } else { %>
+        <div class="card__body" style="padding:var(--sp-4)">
+          <div class="stack stack--sm">
+            <% notifications.slice(0, 5).forEach((n) => { %>
+              <div style="padding:var(--sp-3);border-radius:var(--r-md);background:var(--ink-50);border-left:3px solid <%= n.severity === 'warning' ? 'var(--warning-500)' : n.severity === 'success' ? 'var(--success-500)' : 'var(--navy-400)' %>">
+                <div class="small strong" style="margin-bottom:2px"><%= n.title %></div>
+                <div class="tiny muted" style="line-height:1.5"><%= n.body %></div>
+                <div class="tiny" style="color:var(--ink-400);margin-top:4px"><%= timeAgo(n.created_at) %></div>
+              </div>
+            <% }); %>
+          </div>
+        </div>
+      <% } %>
+    </section>
+
+    <!-- Quick actions -->
+    <section class="card">
+      <div class="card__head"><div><h3>Quick Actions</h3></div></div>
+      <div class="card__body">
+        <div class="stack stack--sm">
+          <a href="/student/schedule" class="btn btn--ghost w-full" style="justify-content:flex-start"><%- icon('calendar') %> View examination timetable</a>
+          <a href="/student/results" class="btn btn--ghost w-full" style="justify-content:flex-start"><%- icon('award') %> Check published results</a>
+          <a href="/student/revaluations" class="btn btn--ghost w-full" style="justify-content:flex-start"><%- icon('refresh') %> Submit a revaluation request</a>
+          <a href="/student/records" class="btn btn--ghost w-full" style="justify-content:flex-start"><%- icon('folder') %> Open academic records</a>
+        </div>
+      </div>
+    </section>
+
+    <div class="security-note">
+      <%- icon('shield-check') %>
+      <span>You are signed in with the <strong>Student</strong> role. Examiner, moderation and administration modules are not available to this account.</span>
+    </div>
+  </div>
+</div>

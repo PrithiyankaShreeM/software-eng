@@ -1,0 +1,231 @@
+<div class="auth-shell">
+
+  <!-- ================= LEFT: INSTITUTIONAL PANEL ================= -->
+  <aside class="auth-aside" aria-label="About this platform">
+    <div class="auth-aside__inner">
+      <div class="auth-aside__head">
+        <div class="auth-aside__crest" aria-hidden="true"><%- icon('crest') %></div>
+        <%- include('../partials/brand') %>
+      </div>
+
+      <h1 class="auth-aside__title">Unified access to <em>examinations</em> and academic credentials.</h1>
+      <p class="auth-aside__lede">
+        One secure gateway for students, faculty, administrators and external verification
+        agencies. Every sign-in is authenticated, authorised and recorded.
+      </p>
+
+      <ul class="auth-aside__features">
+        <li>
+          <%- icon('shield-check') %>
+          <div>
+            <strong>Role-based access control</strong>
+            You see only the modules your assigned role permits — nothing more.
+          </div>
+        </li>
+        <li>
+          <%- icon('clipboard') %>
+          <div>
+            <strong>Governed examination workflow</strong>
+            Evaluation, moderation, approval and publication remain separate, audited steps.
+          </div>
+        </li>
+        <li>
+          <%- icon('globe') %>
+          <div>
+            <strong>Verified credentials</strong>
+            External agencies confirm degree certificates against the university registry.
+          </div>
+        </li>
+      </ul>
+
+      <div class="auth-aside__foot">
+        <span><%= university.examControl %></span>
+        <a href="mailto:<%= university.supportEmail %>"><%- icon('mail') %> <%= university.supportEmail %></a>
+        <span><%- icon('phone') %> <%= university.helpline %></span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ================= RIGHT: LOGIN FORM ================= -->
+  <main class="auth-main" id="main-content">
+    <div class="auth-main__bar">
+      <div class="brand">
+        <div class="brand__mark" aria-hidden="true"><%- icon('crest') %></div>
+        <div class="brand__text">
+          <span class="brand__name" style="color:var(--navy-900)"><%= university.shortName %> Portal</span>
+          <span class="brand__sub" style="color:var(--gold-600)">Central Authentication</span>
+        </div>
+      </div>
+      <button type="button" class="demo-toggle" data-demo-guide-toggle aria-controls="demoGuide" aria-expanded="false">
+        <%- icon('key') %> <span data-demo-guide-label>Demo accounts</span>
+      </button>
+    </div>
+
+    <div class="auth-main__inner">
+      <%- include('../partials/flash') %>
+
+      <!-- Lockout / generic error banner -->
+      <% if (typeof loginError !== 'undefined' && loginError && (!errors || Object.keys(errors).length === 0)) { %>
+        <div class="alert alert--error" role="alert">
+          <%- icon('alert') %>
+          <div class="alert__body">
+            <div class="alert__title">Sign-in unsuccessful</div>
+            <%= loginError %>
+          </div>
+        </div>
+      <% } %>
+
+      <div class="form-head">
+        <h1>Sign in to your account</h1>
+        <p>Select your portal, then enter the credentials issued by the university.</p>
+      </div>
+
+      <!-- Portal selector -->
+      <form method="post" action="/login" id="loginForm" novalidate>
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <input type="hidden" name="next" value="<%= typeof nextUrl !== 'undefined' && nextUrl ? nextUrl : '' %>">
+
+        <fieldset style="border:0;padding:0;margin:0 0 var(--sp-4)">
+          <legend class="field__label" style="margin-bottom:var(--sp-2)">Select your login portal</legend>
+          <div class="portal-tabs" role="radiogroup" aria-label="Login portal">
+            <% loginCategories.forEach((cat) => { %>
+              <input class="portal-tabs__input" type="radio" name="category" id="portal-<%= cat.key %>"
+                     value="<%= cat.key %>" <%= category === cat.key ? 'checked' : '' %> data-portal-radio>
+              <label class="portal-tabs__label" for="portal-<%= cat.key %>">
+                <%- icon(cat.icon) %>
+                <span><%= cat.label %></span>
+              </label>
+            <% }); %>
+          </div>
+        </fieldset>
+
+        <div class="portal-note" data-portal-note>
+          <%- icon('info') %>
+          <span data-portal-note-text></span>
+        </div>
+
+        <!-- User ID -->
+        <div class="field">
+          <label class="field__label" for="identifier">
+            <span>User ID / Username <span class="req" aria-hidden="true">*</span></span>
+          </label>
+          <div class="input-wrap input-wrap--icon">
+            <%- icon('user', { className: 'input-wrap__icon' }) %>
+            <input class="input input--mono" type="text" id="identifier" name="identifier"
+                   value="<%= typeof identifier !== 'undefined' ? identifier : '' %>"
+                   placeholder="e.g. STU2024001"
+                   autocomplete="username" autocapitalize="none" spellcheck="false"
+                   required autofocus
+                   aria-describedby="identifier-hint<%= errors && errors.identifier ? ' identifier-error' : '' %>"
+                   <%= errors && errors.identifier ? 'aria-invalid="true"' : '' %>>
+          </div>
+          <div class="field__hint" id="identifier-hint" data-identifier-hint>Student ID, Staff ID or administrator username.</div>
+          <% if (errors && errors.identifier) { %>
+            <div class="field__error" id="identifier-error"><%- icon('alert') %><%= errors.identifier %></div>
+          <% } %>
+        </div>
+
+        <!-- Password -->
+        <div class="field">
+          <label class="field__label" for="password">
+            <span>Password <span class="req" aria-hidden="true">*</span></span>
+            <a href="/forgot-password" class="tiny">Forgot password?</a>
+          </label>
+          <div class="input-wrap input-wrap--icon input-wrap--action">
+            <%- icon('lock', { className: 'input-wrap__icon' }) %>
+            <input class="input" type="password" id="password" name="password"
+                   placeholder="Enter your password"
+                   autocomplete="current-password" required
+                   aria-describedby="capsWarning<%= errors && errors.password ? ' password-error' : '' %>"
+                   <%= errors && errors.password ? 'aria-invalid="true"' : '' %>>
+            <button type="button" class="pw-toggle" data-password-toggle="password"
+                    aria-label="Show password" aria-pressed="false" title="Show password">
+              <span data-eye-show><%- icon('eye') %></span>
+              <span data-eye-hide hidden><%- icon('eye-off') %></span>
+            </button>
+          </div>
+          <div class="caps-warning" id="capsWarning"><%- icon('alert-triangle') %> Caps Lock is on</div>
+          <% if (errors && errors.password) { %>
+            <div class="field__error" id="password-error"><%- icon('alert') %><%= errors.password %></div>
+          <% } %>
+        </div>
+
+        <div class="form-row">
+          <label class="check">
+            <input type="checkbox" name="remember" value="1" <%= typeof remember !== 'undefined' && remember ? 'checked' : '' %>>
+            <span class="check__text">Remember me for 30 days</span>
+          </label>
+          <span class="tiny muted"><%- icon('lock', { size: 12 }) %> Encrypted session</span>
+        </div>
+
+        <button type="submit" class="btn btn--primary btn--lg btn--block" data-submit-btn>
+          <span class="btn__spinner" aria-hidden="true"></span>
+          <span class="btn__label"><%- icon('login') %> Sign in securely</span>
+        </button>
+
+        <div class="security-note mt-4">
+          <%- icon('shield') %>
+          <span>Authorised use only. All sign-in attempts, permission changes and record access are written to an immutable audit log.</span>
+        </div>
+      </form>
+
+      <!-- ================= DEMO CREDENTIALS GUIDE ================= -->
+      <% if (demoAccounts && demoAccounts.length) { %>
+      <section class="demo-guide" id="demoGuide" aria-labelledby="demoGuideTitle">
+        <div class="demo-guide__head">
+          <%- icon('key') %>
+          <span class="demo-guide__title" id="demoGuideTitle">Demonstration Accounts — Faculty Guide</span>
+          <span class="demo-guide__tag">Demo only</span>
+        </div>
+        <div class="demo-guide__body">
+          <p class="demo-guide__intro">
+            <strong>Synthetic accounts only.</strong> No real student, staff or credential data is used.
+            Click a user ID to fill the form, then select the matching portal.
+          </p>
+          <table class="demo-table">
+            <thead>
+              <tr>
+                <th scope="col">Role</th>
+                <th scope="col">User ID</th>
+                <th scope="col">Portal</th>
+                <th scope="col">Access</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% demoAccounts.forEach((acct) => { %>
+                <tr>
+                  <td><span class="badge <%= roleDefinitions[acct.role] ? roleDefinitions[acct.role].badgeClass : 'badge--muted' %>"><%= acct.roleLabel %></span></td>
+                  <td>
+                    <button type="button" class="demo-table__user" data-demo-fill="<%= acct.identifier %>"
+                            data-demo-portal="<%= acct.portal.toLowerCase().replace(' ', '-').replace('external-verifier','verifier') %>"
+                            title="Fill the login form with this demo account">
+                      <%= acct.identifier %> <%- icon('copy') %>
+                    </button>
+                  </td>
+                  <td class="tiny"><%= acct.portal %></td>
+                  <td class="tiny muted"><%= acct.highlights %></td>
+                </tr>
+              <% }); %>
+            </tbody>
+          </table>
+        </div>
+        <div class="demo-guide__foot">
+          <%- icon('info') %>
+          <span>
+            <strong>Shared password for every demo account:</strong>
+            <code class="mono" style="background:#fff;border:1px solid var(--gold-300);border-radius:4px;padding:1px 5px"><%= demoPassword %></code>
+            — accounts are pre-seeded and clearly flagged as demonstration data throughout the system.
+          </span>
+        </div>
+      </section>
+      <% } %>
+
+    </div>
+
+    <footer class="auth-footer">
+      <span>&copy; <%= new Date().getFullYear() %> <%= university.name %></span>
+      <span><%= university.examControl %></span>
+      <span class="tiny">Platform v1.0 · Central Authentication</span>
+    </footer>
+  </main>
+</div>

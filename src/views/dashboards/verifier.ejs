@@ -1,0 +1,169 @@
+<div class="role-banner">
+  <div class="role-banner__icon"><%- icon('globe') %></div>
+  <div class="role-banner__body">
+    <div class="role-banner__title">Credential Verification Portal — <%= currentUser.fullName %></div>
+    <div class="role-banner__desc">
+      Confirm degree certificates issued by <%= university.name %>. Only permitted credential fields are disclosed.
+    </div>
+  </div>
+  <div class="role-banner__meta">
+    <span class="badge badge--gold"><%= currentUser.publicId %></span>
+  </div>
+</div>
+
+<div class="grid-main-side">
+  <div class="stack">
+    <!-- Verification form -->
+    <section class="card">
+      <div class="card__head">
+        <div class="row" style="gap:var(--sp-2)">
+          <span class="stat__icon" style="width:30px;height:30px;flex-basis:30px"><%- icon('scan') %></span>
+          <div><h3>Verify a credential</h3><p>Enter the credential number printed on the certificate</p></div>
+        </div>
+      </div>
+      <div class="card__body">
+        <form method="post" action="/verifier/verify">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <div class="form-grid">
+            <div class="field">
+              <label class="field__label" for="credential_no">Credential number</label>
+              <input class="input input--mono" id="credential_no" name="credential_no" required
+                     placeholder="MSU-DEG-2024-0001" autocapitalize="characters" spellcheck="false">
+            </div>
+            <div class="field">
+              <label class="field__label" for="purpose">Purpose of verification</label>
+              <input class="input" id="purpose" name="purpose" placeholder="Employment background check">
+            </div>
+          </div>
+          <button type="submit" class="btn btn--primary" data-submit-btn>
+            <span class="btn__spinner" aria-hidden="true"></span>
+            <span class="btn__label"><%- icon('search') %> Verify credential</span>
+          </button>
+          <span class="tiny muted" style="margin-left:var(--sp-3)">Demo numbers: MSU-DEG-2024-0001 · MSU-DEG-2022-0455 (revoked)</span>
+        </form>
+      </div>
+    </section>
+
+    <!-- Result -->
+    <% if (verification) { %>
+      <section class="card">
+        <div class="card__head">
+          <div><h3>Verification Result</h3><p>Credential <span class="mono"><%= verification.credentialNo %></span></p></div>
+          <div class="card__actions">
+            <% if (verification.result === 'valid') { %>
+              <span class="badge badge--success"><%- icon('check-circle') %> Authentic</span>
+            <% } else if (verification.result === 'revoked') { %>
+              <span class="badge badge--danger"><%- icon('x-circle') %> Revoked</span>
+            <% } else { %>
+              <span class="badge badge--danger"><%- icon('alert') %> Not found</span>
+            <% } %>
+          </div>
+        </div>
+        <% if (!verification.credential) { %>
+          <div class="card__body">
+            <div class="alert alert--error" style="margin:0">
+              <%- icon('alert') %>
+              <div class="alert__body">
+                <div class="alert__title">No matching credential</div>
+                No degree certificate is registered under that number. Check the number and try again — do not treat a mismatch as evidence of forgery without contacting the examination office.
+              </div>
+            </div>
+          </div>
+        <% } else { %>
+          <div class="card__body">
+            <div class="form-grid">
+              <div class="field"><div class="field__label">Credential number</div><div class="mono strong"><%= verification.credential.credentialNo %></div></div>
+              <div class="field"><div class="field__label">Status</div><span class="badge badge--<%= verification.credential.status === 'issued' ? 'success' : 'danger' %>"><%= verification.credential.status %></span></div>
+              <div class="field"><div class="field__label">Graduate</div><div class="small strong"><%= verification.credential.name %></div><div class="tiny muted mono"><%= verification.credential.publicId %></div></div>
+              <div class="field"><div class="field__label">Class awarded</div><div class="small"><%= verification.credential.classAwarded %></div></div>
+              <div class="field field--full"><div class="field__label">Degree</div><div class="small strong"><%= verification.credential.degree %></div></div>
+              <div class="field"><div class="field__label">Programme</div><div class="small"><%= verification.credential.programme %></div></div>
+              <div class="field"><div class="field__label">Department</div><div class="small"><%= verification.credential.department %></div></div>
+              <div class="field"><div class="field__label">Date of issue</div><div class="small"><%= formatDate(verification.credential.issuedOn) %></div></div>
+            </div>
+            <div class="security-note mt-3">
+              <%- icon('shield') %>
+              <span>Names are partially masked. Full personal details and all internal examination records are withheld from external verifiers by policy.</span>
+            </div>
+          </div>
+        <% } %>
+      </section>
+    <% } %>
+
+    <!-- Recent history -->
+    <section class="card">
+      <div class="card__head">
+        <div><h3>Recent Verifications</h3><p>Your organisation's latest checks</p></div>
+        <div class="card__actions"><a href="/verifier/history" class="btn btn--ghost btn--sm">Full history</a></div>
+      </div>
+      <% if (overview.history.length === 0) { %>
+        <div class="empty"><div class="empty__icon"><%- icon('history') %></div><h4>No verifications yet</h4><p>Verified credentials will be listed here.</p></div>
+      <% } else { %>
+        <div class="table-wrap">
+          <table class="table">
+            <thead><tr><th scope="col">Credential</th><th scope="col">Result</th><th scope="col">Purpose</th><th scope="col" class="text-right">When</th></tr></thead>
+            <tbody>
+              <% overview.history.slice(0, 8).forEach((h) => { %>
+                <tr>
+                  <td class="mono strong"><%= h.credential_no %></td>
+                  <td><span class="badge badge--<%= h.result === 'valid' ? 'success' : h.result === 'revoked' ? 'warning' : 'danger' %>"><%= h.result %></span></td>
+                  <td class="tiny muted"><%= h.purpose || '—' %></td>
+                  <td class="text-right tiny muted nowrap"><%= timeAgo(h.created_at) %></td>
+                </tr>
+              <% }); %>
+            </tbody>
+          </table>
+        </div>
+      <% } %>
+    </section>
+  </div>
+
+  <div class="stack">
+    <div class="stat-grid" style="grid-template-columns:1fr;margin-bottom:0">
+      <div class="stat stat--success">
+        <div class="stat__top"><span class="stat__label">Valid</span><span class="stat__icon"><%- icon('check-circle') %></span></div>
+        <div class="stat__value"><%= overview.stats.valid %></div>
+        <div class="stat__meta">Authentic credentials confirmed</div>
+      </div>
+      <div class="stat stat--warning">
+        <div class="stat__top"><span class="stat__label">Revoked</span><span class="stat__icon"><%- icon('x-circle') %></span></div>
+        <div class="stat__value"><%= overview.stats.revoked %></div>
+        <div class="stat__meta">Withdrawn certificates</div>
+      </div>
+      <div class="stat stat--danger">
+        <div class="stat__top"><span class="stat__label">Not found</span><span class="stat__icon"><%- icon('alert') %></span></div>
+        <div class="stat__value"><%= overview.stats.invalid %></div>
+        <div class="stat__meta">No matching registry entry</div>
+      </div>
+    </div>
+
+    <section class="card">
+      <div class="card__head"><div><h3>Access Scope</h3></div></div>
+      <div class="card__body">
+        <div class="stack stack--sm">
+          <div class="row small"><span class="badge badge--success"><%- icon('check', { size: 10 }) %></span> Verify degree certificates</div>
+          <div class="row small"><span class="badge badge--success"><%- icon('check', { size: 10 }) %></span> View permitted credential fields</div>
+          <div class="row small"><span class="badge badge--success"><%- icon('check', { size: 10 }) %></span> View own verification history</div>
+          <hr style="margin:var(--sp-2) 0">
+          <div class="row small muted"><span class="badge badge--neutral"><%- icon('lock', { size: 10 }) %></span> Student examination records</div>
+          <div class="row small muted"><span class="badge badge--neutral"><%- icon('lock', { size: 10 }) %></span> Internal marks and evaluations</div>
+          <div class="row small muted"><span class="badge badge--neutral"><%- icon('lock', { size: 10 }) %></span> Staff and administration modules</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card__head"><div><h3>Notifications</h3></div></div>
+      <div class="card__body" style="padding:var(--sp-4)">
+        <div class="stack stack--sm">
+          <% notifications.slice(0, 3).forEach((n) => { %>
+            <div style="padding:var(--sp-3);border-radius:var(--r-md);background:var(--ink-50)">
+              <div class="small strong"><%= n.title %></div>
+              <div class="tiny muted mt-2"><%= n.body %></div>
+            </div>
+          <% }); %>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>

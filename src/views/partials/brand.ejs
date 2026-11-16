@@ -1,0 +1,8 @@
+<%# Shared university lock-up. variant: 'light' (on dark bg) | 'dark' (on light bg) %>
+<div class="brand <%= typeof variant !== 'undefined' && variant === 'dark' ? 'brand--dark' : '' %>">
+  <div class="brand__mark" aria-hidden="true"><%- icon('crest') %></div>
+  <div class="brand__text">
+    <span class="brand__name"><%= typeof nameOverride !== 'undefined' && nameOverride ? nameOverride : university.name %></span>
+    <span class="brand__sub"><%= university.tagline %></span>
+  </div>
+</div>

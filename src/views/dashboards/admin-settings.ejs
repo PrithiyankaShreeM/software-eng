@@ -1,0 +1,73 @@
+<%
+  const GROUPS = [
+    { key: 'institution', label: 'Institution', icon: 'home', desc: 'University identity shown across the platform' },
+    { key: 'examination', label: 'Examination', icon: 'clipboard', desc: 'Semester, fees, revaluation window and pass mark' },
+    { key: 'results', label: 'Results', icon: 'award', desc: 'Result publication behaviour' },
+    { key: 'security', label: 'Security', icon: 'shield-check', desc: 'Session and authentication policy' },
+  ];
+  const grouped = {};
+  GROUPS.forEach((g) => { grouped[g.key] = []; });
+  Object.keys(settings).forEach((key) => {
+    const prefix = key.split('.')[0];
+    (grouped[prefix] = grouped[prefix] || []).push({ key, value: settings[key] });
+  });
+%>
+
+<div class="page-head">
+  <div class="page-head__text">
+    <h2>Examination Settings</h2>
+    <p>Platform-wide configuration. Changes are applied immediately and written to the audit log.</p>
+  </div>
+</div>
+
+<form method="post" action="/admin/settings">
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+
+  <div class="grid-2 mb-4">
+    <% GROUPS.concat(Object.keys(grouped).filter((g) => !GROUPS.find((x) => x.key === g)).map((g) => ({ key: g, label: g, icon: 'cog', desc: '' }))).forEach((group) => {
+         const items = grouped[group.key] || [];
+         if (items.length === 0) return;
+    %>
+      <section class="card">
+        <div class="card__head">
+          <div class="row" style="gap:var(--sp-2)">
+            <span class="stat__icon" style="width:26px;height:26px;flex-basis:26px"><%- icon(group.icon) %></span>
+            <div>
+              <h3><%= group.label %></h3>
+              <p><%= group.desc %></p>
+            </div>
+          </div>
+        </div>
+        <div class="card__body">
+          <div class="stack stack--sm">
+            <% items.forEach((item) => { %>
+              <div class="field" style="margin-bottom:var(--sp-2)">
+                <label class="field__label" for="setting-<%= item.key %>">
+                  <span class="mono" style="font-size:0.72rem;color:var(--ink-600)"><%= item.key %></span>
+                </label>
+                <% if (item.value === 'true' || item.value === 'false') { %>
+                  <select class="input input--sm" id="setting-<%= item.key %>" name="setting.<%= item.key %>">
+                    <option value="true" <%= item.value === 'true' ? 'selected' : '' %>>Enabled</option>
+                    <option value="false" <%= item.value === 'false' ? 'selected' : '' %>>Disabled</option>
+                  </select>
+                <% } else { %>
+                  <input class="input input--sm" id="setting-<%= item.key %>" name="setting.<%= item.key %>" value="<%= item.value %>">
+                <% } %>
+              </div>
+            <% }); %>
+          </div>
+        </div>
+      </section>
+    <% }); %>
+  </div>
+
+  <div class="card">
+    <div class="card__foot" style="display:flex;justify-content:space-between;align-items:center;gap:var(--sp-3);flex-wrap:wrap">
+      <span class="row small"><%- icon('info', { size: 14, className: 'muted' }) %> Security policy values shown here are enforced by the application code, not only stored as configuration.</span>
+      <button type="submit" class="btn btn--primary" data-submit-btn>
+        <span class="btn__spinner" aria-hidden="true"></span>
+        <span class="btn__label"><%- icon('check') %> Save settings</span>
+      </button>
+    </div>
+  </div>
+</form>

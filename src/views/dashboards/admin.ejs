@@ -1,0 +1,163 @@
+<div class="role-banner">
+  <div class="role-banner__icon"><%- icon('settings') %></div>
+  <div class="role-banner__body">
+    <div class="role-banner__title">System Administration — <%= currentUser.fullName %></div>
+    <div class="role-banner__desc">
+      Account lifecycle, role assignment, examination settings and the system-wide audit trail.
+    </div>
+  </div>
+  <div class="role-banner__meta">
+    <span class="badge badge--gold">Full administrative access</span>
+  </div>
+</div>
+
+<div class="stat-grid">
+  <div class="stat stat--info">
+    <div class="stat__top"><span class="stat__label">Total accounts</span><span class="stat__icon"><%- icon('users') %></span></div>
+    <div class="stat__value"><%= stats.total %></div>
+    <div class="stat__meta"><%= stats.active %> active · <%= stats.inactive %> deactivated</div>
+  </div>
+  <div class="stat stat--success">
+    <div class="stat__top"><span class="stat__label">Live sessions</span><span class="stat__icon"><%- icon('activity') %></span></div>
+    <div class="stat__value"><%= overview.liveSessions.length %></div>
+    <div class="stat__meta">Currently authenticated</div>
+  </div>
+  <div class="stat <%= stats.locked > 0 ? 'stat--danger' : '' %>">
+    <div class="stat__top"><span class="stat__label">Locked accounts</span><span class="stat__icon"><%- icon('lock') %></span></div>
+    <div class="stat__value"><%= stats.locked %></div>
+    <div class="stat__meta">Brute-force protection</div>
+  </div>
+  <div class="stat stat--warning">
+    <div class="stat__top"><span class="stat__label">Audit events (24h)</span><span class="stat__icon"><%- icon('clipboard') %></span></div>
+    <div class="stat__value"><%= auditSummary.last24h %></div>
+    <div class="stat__meta"><%= auditSummary.failures24h %> failed authorisations</div>
+  </div>
+</div>
+
+<div class="grid-main-side">
+  <div class="stack">
+    <!-- Account distribution -->
+    <section class="card">
+      <div class="card__head">
+        <div><h3>Accounts by Role</h3><p>Distribution across the platform</p></div>
+        <div class="card__actions"><a href="/admin/accounts" class="btn btn--ghost btn--sm">Manage accounts <%- icon('arrowRight') %></a></div>
+      </div>
+      <div class="card__body">
+        <div class="stack stack--sm">
+          <% Object.keys(roleDefinitions).forEach((roleKey) => {
+               const count = stats.byRole[roleKey] || 0;
+               const pct = stats.total ? Math.round((count / stats.total) * 100) : 0;
+          %>
+            <div class="row" style="gap:var(--sp-3)">
+              <span class="badge <%= roleDefinitions[roleKey].badgeClass %>" style="min-width:150px;justify-content:center"><%= roleDefinitions[roleKey].label %></span>
+              <div style="flex:1;height:8px;background:var(--ink-100);border-radius:var(--r-full);overflow:hidden">
+                <div style="height:100%;width:<%= pct %>%;background:linear-gradient(90deg,var(--navy-500),var(--navy-700));border-radius:var(--r-full)"></div>
+              </div>
+              <span class="mono tiny strong" style="min-width:34px;text-align:right"><%= count %></span>
+            </div>
+          <% }); %>
+        </div>
+      </div>
+    </section>
+
+    <!-- Recent audit -->
+    <section class="card">
+      <div class="card__head">
+        <div><h3>Recent Security Events</h3><p>Latest entries from the append-only audit log</p></div>
+        <div class="card__actions"><a href="/admin/audit" class="btn btn--ghost btn--sm">Full log <%- icon('arrowRight') %></a></div>
+      </div>
+      <div class="table-wrap">
+        <table class="table table--compact">
+          <thead><tr><th scope="col">Time</th><th scope="col">Event</th><th scope="col">Actor</th><th scope="col">Outcome</th></tr></thead>
+          <tbody>
+            <% recentAudit.forEach((e) => { %>
+              <tr>
+                <td class="tiny muted nowrap"><%= timeAgo(e.created_at) %></td>
+                <td>
+                  <div class="table__primary mono" style="font-size:0.75rem"><%= e.action %></div>
+                  <div class="table__sub"><%= e.detail || e.target || '' %></div>
+                </td>
+                <td class="tiny"><%= e.actor_name || 'Anonymous' %></td>
+                <td><span class="badge badge--<%= e.outcome === 'success' ? 'success' : 'danger' %>"><%= e.outcome %></span></td>
+              </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Live sessions -->
+    <section class="card">
+      <div class="card__head">
+        <div><h3>Active Sessions</h3><p>Server-side sessions currently valid</p></div>
+      </div>
+      <% if (overview.liveSessions.length === 0) { %>
+        <div class="empty" style="padding:var(--sp-8)"><p>No active sessions.</p></div>
+      <% } else { %>
+        <div class="table-wrap">
+          <table class="table table--compact">
+            <thead><tr><th scope="col">User</th><th scope="col">Role</th><th scope="col">IP</th><th scope="col">Last seen</th><th scope="col">Expires</th></tr></thead>
+            <tbody>
+              <% overview.liveSessions.forEach((s) => { %>
+                <tr>
+                  <td><div class="table__primary"><%= s.full_name %></div><div class="table__sub mono"><%= s.username %></div></td>
+                  <td><span class="badge <%= roleDefinitions[s.role] ? roleDefinitions[s.role].badgeClass : 'badge--muted' %>" style="font-size:0.65rem"><%= roleDefinitions[s.role] ? roleDefinitions[s.role].shortLabel : s.role %></span></td>
+                  <td class="tiny mono"><%= s.ip_address || '—' %></td>
+                  <td class="tiny muted nowrap"><%= timeAgo(s.last_seen_at) %></td>
+                  <td class="tiny muted nowrap"><%= formatDateTime(s.expires_at) %></td>
+                </tr>
+              <% }); %>
+            </tbody>
+          </table>
+        </div>
+      <% } %>
+    </section>
+  </div>
+
+  <div class="stack">
+    <section class="card">
+      <div class="card__head"><div><h3>Administration</h3></div></div>
+      <div class="card__body">
+        <div class="stack stack--sm">
+          <a href="/admin/accounts" class="btn btn--ghost w-full" style="justify-content:flex-start"><%- icon('users') %> Manage accounts</a>
+          <a href="/admin/roles" class="btn btn--ghost w-full" style="justify-content:flex-start"><%- icon('shield-check') %> Roles &amp; permissions</a>
+          <a href="/admin/settings" class="btn btn--ghost w-full" style="justify-content:flex-start"><%- icon('cog') %> Examination settings</a>
+          <a href="/admin/audit" class="btn btn--ghost w-full" style="justify-content:flex-start"><%- icon('clipboard') %> Audit log</a>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card__head"><div><h3>Key Settings</h3></div><div class="card__actions"><a href="/admin/settings" class="btn btn--subtle btn--sm">Edit</a></div></div>
+      <div class="card__body" style="padding:var(--sp-4)">
+        <div class="stack stack--sm">
+          <% overview.settings.slice(0, 6).forEach((s) => { %>
+            <div class="row row--between" style="gap:var(--sp-2)">
+              <span class="tiny muted mono" style="word-break:break-all"><%= s.key %></span>
+              <span class="badge badge--neutral"><%= s.value %></span>
+            </div>
+          <% }); %>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card__head"><div><h3>Security Posture</h3></div></div>
+      <div class="card__body" style="padding:var(--sp-4)">
+        <div class="stack stack--sm">
+          <div class="row small"><span class="badge badge--success"><%- icon('check') %></span> scrypt password hashing</div>
+          <div class="row small"><span class="badge badge--success"><%- icon('check') %></span> Server-side revocable sessions</div>
+          <div class="row small"><span class="badge badge--success"><%- icon('check') %></span> CSRF tokens on all forms</div>
+          <div class="row small"><span class="badge badge--success"><%- icon('check') %></span> Login throttle &amp; account lockout</div>
+          <div class="row small"><span class="badge badge--success"><%- icon('check') %></span> Immutable audit trail</div>
+          <div class="row small"><span class="badge badge--success"><%- icon('check') %></span> Permission-gated dashboards</div>
+        </div>
+      </div>
+    </section>
+
+    <div class="security-note">
+      <%- icon('info') %>
+      <span><%= stats.demo %> demonstration accounts are flagged with a DEMO badge throughout the platform. All data is synthetic.</span>
+    </div>
+  </div>
+</div>

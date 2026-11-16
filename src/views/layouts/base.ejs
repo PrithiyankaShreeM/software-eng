@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="theme-color" content="#0a1533">
+  <title><%= typeof pageTitle !== 'undefined' && pageTitle ? pageTitle + ' · ' + university.shortName : university.name %></title>
+  <meta name="description" content="<%= university.name %> — centralized examinations and credential management platform.">
+  <meta name="robots" content="noindex, nofollow">
+  <link rel="icon" href="/static/img/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/static/css/app.css">
+  <% if (typeof headExtra !== 'undefined') { %><%- headExtra %><% } %>
+</head>
+<body class="<%= typeof bodyClass !== 'undefined' ? bodyClass : '' %>">
+  <a class="skip-link" href="#main-content">Skip to main content</a>
+  <%- body %>
+  <div class="toast-host" id="toastHost" role="status" aria-live="polite"></div>
+  <script src="/static/js/app.js" defer></script>
+  <% if (typeof scriptExtra !== 'undefined') { %><%- scriptExtra %><% } %>
+</body>
+</html>

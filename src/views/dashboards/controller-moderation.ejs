@@ -1,0 +1,121 @@
+<div class="page-head">
+  <div class="page-head__text">
+    <h2>Moderation Sign-off</h2>
+    <p>Authorise or reject moderator corrections before any recorded mark is amended</p>
+  </div>
+</div>
+
+<div class="security-note mb-4">
+  <%- icon('shield') %>
+  <span>Approving a correction writes the proposed marks into the evaluation record and marks it <span class="mono">moderated</span>. The original examiner mark stays in the moderation history for audit.</span>
+</div>
+
+<section class="card">
+  <div class="card__head">
+    <div><h3>Endorsed Corrections</h3><p><%= moderation.length %> awaiting your decision</p></div>
+  </div>
+  <% if (moderation.length === 0) { %>
+    <div class="empty">
+      <div class="empty__icon"><%- icon('shield-check') %></div>
+      <h4>No corrections awaiting sign-off</h4>
+      <p>Only corrections first endorsed by a moderator appear here. This preserves the two-step governance chain.</p>
+    </div>
+  <% } else { %>
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr>
+            <th scope="col">Student</th>
+            <th scope="col">Paper</th>
+            <th scope="col" class="text-right">Original</th>
+            <th scope="col" class="text-right">Proposed</th>
+            <th scope="col">Moderation rationale</th>
+            <th scope="col" class="text-right">Decision</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% moderation.forEach((m) => { %>
+            <tr>
+              <td class="table__primary"><%= m.student_name %></td>
+              <td class="mono"><%= m.code %></td>
+              <td class="text-right table__num"><%= m.original_marks %></td>
+              <td class="text-right table__num" style="color:var(--gold-700)"><%= m.proposed_marks %></td>
+              <td class="tiny muted" style="max-width:280px"><%= m.reason %></td>
+              <td class="text-right">
+                <div class="table__actions">
+                  <button type="button" class="btn btn--primary btn--sm" data-modal-open="decideModal"
+                          data-modal-prefill='<%= JSON.stringify({ action: "approve", id: m.id, student: m.student_name, paper: m.code, original: m.original_marks, proposed: m.proposed_marks }) %>'>
+                    <%- icon('check') %> Approve
+                  </button>
+                  <button type="button" class="btn btn--ghost btn--sm" data-modal-open="decideModal"
+                          data-modal-prefill='<%= JSON.stringify({ action: "reject", id: m.id, student: m.student_name, paper: m.code, original: m.original_marks, proposed: m.proposed_marks }) %>'>
+                    <%- icon('x') %> Reject
+                  </button>
+                </div>
+              </td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    </div>
+  <% } %>
+</section>
+
+<div class="modal-overlay" id="decideModal" role="dialog" aria-modal="true" aria-labelledby="decideTitle">
+  <div class="modal">
+    <form method="post" action="/controller/moderation" id="decideForm">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <div class="modal__head">
+        <div><h3 id="decideTitle">Confirm moderation decision</h3><p>Your decision is final and recorded in the audit log.</p></div>
+        <button type="button" class="modal__close" data-modal-close aria-label="Close"><%- icon('x') %></button>
+      </div>
+      <div class="modal__body">
+        <div class="portal-note">
+          <%- icon('user') %>
+          <span><strong data-decide-student>—</strong> · <span data-decide-paper>—</span></span>
+        </div>
+        <div class="row mb-4" style="gap:var(--sp-4)">
+          <div style="flex:1;padding:var(--sp-3);background:var(--ink-50);border-radius:var(--r-md);text-align:center">
+            <div class="tiny muted">Original</div>
+            <div class="strong" data-decide-original style="font-size:1.2rem">—</div>
+          </div>
+          <div style="flex:1;padding:var(--sp-3);background:var(--gold-100);border-radius:var(--r-md);text-align:center">
+            <div class="tiny" style="color:var(--gold-700)">Proposed</div>
+            <div class="strong" data-decide-proposed style="font-size:1.2rem;color:var(--gold-700)">—</div>
+          </div>
+        </div>
+        <div class="field">
+          <label class="field__label" for="note">Decision note (optional)</label>
+          <textarea class="input" id="note" name="note" placeholder="Record the reasoning for your decision."></textarea>
+        </div>
+      </div>
+      <div class="modal__foot">
+        <button type="button" class="btn btn--ghost" data-modal-close>Cancel</button>
+        <button type="submit" class="btn btn--primary" data-submit-btn>
+          <span class="btn__spinner" aria-hidden="true"></span>
+          <span class="btn__label"><%- icon('check') %> Confirm decision</span>
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('click', function (event) {
+    const trigger = event.target.closest('[data-modal-open="decideModal"]');
+    if (!trigger) return;
+    let data = {};
+    try { data = JSON.parse(trigger.getAttribute('data-modal-prefill') || '{}'); } catch (e) { data = {}; }
+    const form = document.getElementById('decideForm');
+    if (form && data.id && data.action) {
+      form.setAttribute('action', '/controller/moderation/' + data.id + '/' + data.action);
+    }
+    const set = (sel, value) => { const el = document.querySelector(sel); if (el) el.textContent = value; };
+    set('[data-decide-student]', data.student || '—');
+    set('[data-decide-paper]', data.paper || '—');
+    set('[data-decide-original]', String(data.original ?? '—'));
+    set('[data-decide-proposed]', String(data.proposed ?? '—'));
+    const title = document.getElementById('decideTitle');
+    if (title) title.textContent = data.action === 'reject' ? 'Reject this correction?' : 'Approve this correction?';
+  });
+</script>

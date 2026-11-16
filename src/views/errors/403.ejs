@@ -1,0 +1,34 @@
+<div class="error-page" style="<%= currentUser ? 'min-height:calc(100vh - 140px);background:transparent' : '' %>">
+  <div class="error-card">
+    <div class="error-card__icon"><%- icon('shield-x') %></div>
+    <div class="error-card__code">403</div>
+    <h1><%= typeof title !== 'undefined' ? title : 'Access denied' %></h1>
+    <p>
+      <%= typeof message !== 'undefined' ? message : 'You do not have permission to access this resource.' %>
+    </p>
+
+    <% if (typeof attempted !== 'undefined' && attempted) { %>
+      <div class="error-detail">
+        <div><strong>Requested resource</strong></div>
+        <code><%= attempted %></code>
+        <% if (currentUser) { %>
+          <div class="mt-2"><strong>Your session</strong> — <%= currentUser.fullName %> (<%= currentUser.roleLabel %>)</div>
+        <% } %>
+      </div>
+    <% } %>
+
+    <div class="error-card__actions mt-5">
+      <% if (currentUser) { %>
+        <a href="<%= (dashboards.find(d => d.role === currentUser.role) || {}).path || '/' %>" class="btn btn--primary"><%- icon('home') %> Go to my dashboard</a>
+      <% } else { %>
+        <a href="/login" class="btn btn--primary"><%- icon('login') %> Sign in</a>
+      <% } %>
+      <a href="javascript:history.back()" class="btn btn--ghost"><%- icon('arrowLeft') %> Go back</a>
+    </div>
+
+    <div class="security-note mt-5" style="text-align:left">
+      <%- icon('info') %>
+      <span>This access attempt has been recorded in the audit log with your user ID, role, timestamp and IP address.</span>
+    </div>
+  </div>
+</div>

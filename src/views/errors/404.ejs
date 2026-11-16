@@ -1,0 +1,15 @@
+<div class="error-page">
+  <div class="error-card">
+    <div class="error-card__icon" style="background:var(--info-50);border-color:var(--info-100);color:var(--info-600)"><%- icon('search') %></div>
+    <div class="error-card__code">404</div>
+    <h1>Page not found</h1>
+    <p>The page you requested does not exist, or the link you followed is out of date.</p>
+    <div class="error-card__actions">
+      <% if (currentUser) { %>
+        <a href="<%= (dashboards.find(d => d.role === currentUser.role) || {}).path || '/' %>" class="btn btn--primary"><%- icon('home') %> My dashboard</a>
+      <% } else { %>
+        <a href="/login" class="btn btn--primary"><%- icon('login') %> Sign in</a>
+      <% } %>
+    </div>
+  </div>
+</div>

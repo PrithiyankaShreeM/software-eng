@@ -1,0 +1,130 @@
+<div class="page-head">
+  <div class="page-head__text">
+    <h2>My Account</h2>
+    <p>Profile details, password management and active sessions</p>
+  </div>
+</div>
+
+<div class="role-banner">
+  <div class="role-banner__icon"><%- icon('user') %></div>
+  <div class="role-banner__body">
+    <div class="role-banner__title"><%= currentUser.fullName %></div>
+    <div class="role-banner__desc">
+      <span class="mono"><%= currentUser.username %></span> · <%= currentUser.publicId %> · <%= currentUser.email %>
+    </div>
+  </div>
+  <div class="role-banner__meta">
+    <% if (currentUser.isDemo) { %><span class="badge badge--demo">DEMO ACCOUNT</span><% } %>
+    <span class="badge <%= roleDefinitions[currentUser.role] ? roleDefinitions[currentUser.role].badgeClass : 'badge--muted' %>"><%= currentUser.roleLabel %></span>
+  </div>
+</div>
+
+<div class="grid-main-side">
+  <div class="stack">
+    <section class="card">
+      <div class="card__head"><div><h3>Profile</h3><p>Details recorded by the university</p></div></div>
+      <div class="card__body">
+        <div class="form-grid">
+          <div class="field"><div class="field__label">Full name</div><div class="small strong"><%= currentUser.fullName %></div></div>
+          <div class="field"><div class="field__label">Username</div><div class="mono small"><%= currentUser.username %></div></div>
+          <div class="field"><div class="field__label">Public ID</div><div class="mono small"><%= currentUser.publicId %></div></div>
+          <div class="field"><div class="field__label">Email</div><div class="small"><%= currentUser.email %></div></div>
+          <div class="field"><div class="field__label">Role</div><div class="small"><%= currentUser.roleLabel %></div></div>
+          <div class="field"><div class="field__label">Department</div><div class="small"><%= currentUser.department || '—' %></div></div>
+          <% if (currentUser.programme) { %><div class="field"><div class="field__label">Programme</div><div class="small"><%= currentUser.programme %></div></div><% } %>
+          <% if (currentUser.designation) { %><div class="field"><div class="field__label">Designation</div><div class="small"><%= currentUser.designation %></div></div><% } %>
+          <div class="field"><div class="field__label">Last sign-in</div><div class="small"><%= currentUser.lastLoginAt ? formatDateTime(currentUser.lastLoginAt) : '—' %></div></div>
+        </div>
+        <div class="security-note mt-3">
+          <%- icon('info') %>
+          <span>Profile details are maintained by the examination office. Contact <%= university.supportEmail %> to request a correction.</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card__head"><div><h3>Change Password</h3><p>You will stay signed in on this device only</p></div></div>
+      <div class="card__body">
+        <form method="post" action="/account/password">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <div class="field">
+            <label class="field__label" for="current_password">Current password</label>
+            <div class="input-wrap input-wrap--icon input-wrap--action">
+              <%- icon('lock', { className: 'input-wrap__icon' }) %>
+              <input class="input" type="password" id="current_password" name="current_password" required autocomplete="current-password">
+              <button type="button" class="pw-toggle" data-password-toggle="current_password" aria-label="Show password" aria-pressed="false">
+                <span data-eye-show><%- icon('eye') %></span><span data-eye-hide hidden><%- icon('eye-off') %></span>
+              </button>
+            </div>
+          </div>
+          <div class="form-grid">
+            <div class="field">
+              <label class="field__label" for="password">New password</label>
+              <input class="input" type="password" id="password" name="password" required minlength="10" autocomplete="new-password" data-pw-strength>
+              <div class="pw-meter" data-pw-meter data-score="0" hidden>
+                <div class="pw-meter__bars"><span class="pw-meter__bar"></span><span class="pw-meter__bar"></span><span class="pw-meter__bar"></span><span class="pw-meter__bar"></span></div>
+                <div class="pw-meter__label" data-pw-label></div>
+              </div>
+            </div>
+            <div class="field">
+              <label class="field__label" for="confirm_password">Confirm new password</label>
+              <input class="input" type="password" id="confirm_password" name="confirm_password" required minlength="10" autocomplete="new-password" data-pw-confirm="password">
+              <div class="field__error" data-pw-match hidden><%- icon('alert') %> Passwords do not match</div>
+            </div>
+          </div>
+          <button type="submit" class="btn btn--primary" data-submit-btn>
+            <span class="btn__spinner" aria-hidden="true"></span>
+            <span class="btn__label"><%- icon('key') %> Update password</span>
+          </button>
+        </form>
+      </div>
+    </section>
+  </div>
+
+  <div class="stack">
+    <section class="card">
+      <div class="card__head"><div><h3>Active Sessions</h3><p><%= sessions.length %> live</p></div></div>
+      <div class="card__body" style="padding:var(--sp-3)">
+        <% if (sessions.length === 0) { %>
+          <p class="small muted text-center" style="padding:var(--sp-3)">No active sessions.</p>
+        <% } else { %>
+          <div class="stack stack--sm">
+            <% sessions.forEach((s) => { %>
+              <div style="padding:var(--sp-3);border-radius:var(--r-md);background:var(--ink-50)">
+                <div class="row row--between">
+                  <span class="tiny mono"><%= s.ip_address || 'unknown IP' %></span>
+                  <% if (s.remember) { %><span class="badge badge--gold" style="font-size:0.6rem">remembered</span><% } %>
+                </div>
+                <div class="tiny muted mt-2">Seen <%= timeAgo(s.last_seen_at) %> · expires <%= formatDateTime(s.expires_at) %></div>
+              </div>
+            <% }); %>
+          </div>
+        <% } %>
+      </div>
+      <div class="card__foot">
+        <form method="post" action="/account/sessions/revoke" data-confirm="Sign out every other device?">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <button type="submit" class="btn btn--ghost btn--sm w-full"><%- icon('logout') %> Sign out other devices</button>
+        </form>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card__head"><div><h3>Security</h3></div></div>
+      <div class="card__body">
+        <div class="stack stack--sm">
+          <div class="row small"><span class="badge badge--success"><%- icon('check', { size: 10 }) %></span> Password stored with scrypt</div>
+          <div class="row small"><span class="badge badge--success"><%- icon('check', { size: 10 }) %></span> Session expires after idle time</div>
+          <div class="row small"><span class="badge badge--success"><%- icon('check', { size: 10 }) %></span> CSRF protection on every form</div>
+          <div class="row small"><span class="badge badge--success"><%- icon('check', { size: 10 }) %></span> Audit logging enabled</div>
+        </div>
+      </div>
+      <div class="card__foot">
+        <form method="post" action="/logout">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <button type="submit" class="btn btn--danger btn--sm w-full"><%- icon('logout') %> Sign out</button>
+        </form>
+      </div>
+    </section>
+  </div>
+</div>

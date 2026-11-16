@@ -1,0 +1,254 @@
+<div class="page-head">
+  <div class="page-head__text">
+    <h2>Account Management</h2>
+    <p>Create, deactivate, re-role and reset passwords for every platform account</p>
+  </div>
+  <div class="page-head__actions">
+    <button type="button" class="btn btn--primary btn--sm" data-modal-open="newAccount"><%- icon('plus') %> Create account</button>
+  </div>
+</div>
+
+<div class="stat-grid">
+  <div class="stat stat--info">
+    <div class="stat__top"><span class="stat__label">Total</span><span class="stat__icon"><%- icon('users') %></span></div>
+    <div class="stat__value"><%= stats.total %></div>
+  </div>
+  <div class="stat stat--success">
+    <div class="stat__top"><span class="stat__label">Active</span><span class="stat__icon"><%- icon('user-check') %></span></div>
+    <div class="stat__value"><%= stats.active %></div>
+  </div>
+  <div class="stat">
+    <div class="stat__top"><span class="stat__label">Deactivated</span><span class="stat__icon"><%- icon('user-x') %></span></div>
+    <div class="stat__value"><%= stats.inactive %></div>
+  </div>
+  <div class="stat stat--danger">
+    <div class="stat__top"><span class="stat__label">Locked</span><span class="stat__icon"><%- icon('lock') %></span></div>
+    <div class="stat__value"><%= stats.locked %></div>
+  </div>
+</div>
+
+<section class="card">
+  <div class="card__head">
+    <div><h3>All Accounts</h3><p><%= users.length %> account<%= users.length === 1 ? '' : 's' %> shown</p></div>
+  </div>
+  <div class="card__body" style="padding:var(--sp-3) var(--sp-4);border-bottom:1px solid var(--ink-100)">
+    <form method="get" action="/admin/accounts" class="row" style="gap:var(--sp-2)">
+      <div class="input-wrap input-wrap--icon" style="flex:1;min-width:200px">
+        <%- icon('search', { className: 'input-wrap__icon' }) %>
+        <input class="input input--sm" type="search" name="q" value="<%= filters.q %>" placeholder="Search username, name, email or ID…" style="padding-left:36px">
+      </div>
+      <select class="input input--sm" name="role" style="width:170px">
+        <option value="">All roles</option>
+        <% Object.keys(roleDefinitions).forEach((r) => { %>
+          <option value="<%= r %>" <%= filters.role === r ? 'selected' : '' %>><%= roleDefinitions[r].label %></option>
+        <% }); %>
+      </select>
+      <select class="input input--sm" name="status" style="width:150px">
+        <option value="">Any status</option>
+        <option value="active" <%= filters.status === 'active' ? 'selected' : '' %>>Active</option>
+        <option value="inactive" <%= filters.status === 'inactive' ? 'selected' : '' %>>Deactivated</option>
+        <option value="locked" <%= filters.status === 'locked' ? 'selected' : '' %>>Locked</option>
+      </select>
+      <button type="submit" class="btn btn--ghost btn--sm"><%- icon('filter') %> Filter</button>
+      <% if (filters.q || filters.role || filters.status) { %>
+        <a href="/admin/accounts" class="btn btn--subtle btn--sm">Clear</a>
+      <% } %>
+    </form>
+  </div>
+
+  <% if (users.length === 0) { %>
+    <div class="empty"><div class="empty__icon"><%- icon('users') %></div><h4>No accounts match</h4><p>Adjust the filters above.</p></div>
+  <% } else { %>
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr>
+            <th scope="col">Account</th>
+            <th scope="col">Role</th>
+            <th scope="col">Status</th>
+            <th scope="col" class="text-right">Sessions</th>
+            <th scope="col">Last sign-in</th>
+            <th scope="col" class="text-right">Manage</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% users.forEach((u) => {
+               const locked = u.locked_until && new Date(u.locked_until) > new Date();
+               const statusCls = u.status === 'active' ? (locked ? 'danger' : 'success') : 'neutral';
+               const statusLabel = u.status === 'active' ? (locked ? 'Locked' : 'Active') : 'Deactivated';
+          %>
+            <tr>
+              <td>
+                <div class="row" style="gap:var(--sp-2)">
+                  <div class="sidebar__avatar" style="width:30px;height:30px;flex-basis:30px;font-size:0.66rem;background:linear-gradient(145deg,var(--navy-500),var(--navy-700));color:var(--gold-200)"><%= initials(u.full_name) %></div>
+                  <div>
+                    <div class="table__primary"><%= u.full_name %>
+                      <% if (u.is_demo) { %><span class="badge badge--demo" style="font-size:0.58rem;padding:1px 5px">DEMO</span><% } %>
+                    </div>
+                    <div class="table__sub"><span class="mono"><%= u.username %></span> · <%= u.public_id %></div>
+                  </div>
+                </div>
+              </td>
+              <td><span class="badge <%= roleDefinitions[u.role] ? roleDefinitions[u.role].badgeClass : 'badge--muted' %>"><%= roleDefinitions[u.role] ? roleDefinitions[u.role].shortLabel : u.role %></span></td>
+              <td><span class="badge badge--<%= statusCls %>"><%= statusLabel %></span></td>
+              <td class="text-right table__num"><%= u.activeSessions %></td>
+              <td class="tiny muted nowrap"><%= u.last_login_at ? timeAgo(u.last_login_at) : 'Never' %></td>
+              <td>
+                <div class="table__actions">
+                  <a href="/admin/accounts/<%= u.id %>" class="btn btn--ghost btn--sm" title="View detail"><%- icon('eye') %></a>
+                  <button type="button" class="btn btn--ghost btn--sm" title="Change role"
+                          data-modal-open="roleModal"
+                          data-modal-prefill='<%= JSON.stringify({ account_id: u.id, name: u.full_name, username: u.username, role: u.role }) %>'>
+                    <%- icon('shield-check') %>
+                  </button>
+                  <form method="post" action="/admin/accounts/<%= u.id %>/status" data-confirm="<%= u.status === 'active' ? 'Deactivate ' + u.full_name + '? All live sessions will be revoked immediately.' : 'Reactivate ' + u.full_name + '?' %>">
+                    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                    <input type="hidden" name="status" value="<%= u.status === 'active' ? 'inactive' : 'active' %>">
+                    <button type="submit" class="btn btn--ghost btn--sm" title="<%= u.status === 'active' ? 'Deactivate' : 'Reactivate' %>">
+                      <%- icon(u.status === 'active' ? 'user-x' : 'user-check') %>
+                    </button>
+                  </form>
+                  <form method="post" action="/admin/accounts/<%= u.id %>/reset-password" data-confirm="Issue a temporary password for <%= u.full_name %>? Their current sessions will be revoked.">
+                    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                    <button type="submit" class="btn btn--ghost btn--sm" title="Reset password"><%- icon('key') %></button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    </div>
+    <div class="card__foot">
+      Deactivating an account revokes its sessions instantly. Role changes force re-authentication so the new permission set takes effect.
+    </div>
+  <% } %>
+</section>
+
+<!-- Create account modal -->
+<div class="modal-overlay" id="newAccount" role="dialog" aria-modal="true" aria-labelledby="newAccountTitle">
+  <div class="modal modal--wide">
+    <form method="post" action="/admin/accounts">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <div class="modal__head">
+        <div><h3 id="newAccountTitle">Create an account</h3><p>The role is assigned here — users cannot choose their own role.</p></div>
+        <button type="button" class="modal__close" data-modal-close aria-label="Close"><%- icon('x') %></button>
+      </div>
+      <div class="modal__body">
+        <div class="form-grid">
+          <div class="field">
+            <label class="field__label" for="full_name">Full name</label>
+            <input class="input" id="full_name" name="full_name" required>
+          </div>
+          <div class="field">
+            <label class="field__label" for="username">Username</label>
+            <input class="input input--mono" id="username" name="username" required pattern="[A-Za-z0-9._\-]{3,32}" placeholder="e.g. exm1005">
+          </div>
+          <div class="field">
+            <label class="field__label" for="email">Email address</label>
+            <input class="input" id="email" name="email" type="email" required>
+          </div>
+          <div class="field">
+            <label class="field__label" for="public_id">Public ID <span class="tiny muted">(optional)</span></label>
+            <input class="input input--mono" id="public_id" name="public_id" placeholder="auto-generated">
+          </div>
+          <div class="field">
+            <label class="field__label" for="role">Assigned role</label>
+            <select class="input" id="role" name="role" required>
+              <option value="">Choose a role…</option>
+              <% Object.keys(roleDefinitions).forEach((r) => { %>
+                <option value="<%= r %>"><%= roleDefinitions[r].label %></option>
+              <% }); %>
+            </select>
+          </div>
+          <div class="field">
+            <label class="field__label" for="department">Department</label>
+            <input class="input" id="department" name="department" placeholder="Computer Science & Engineering">
+          </div>
+          <div class="field">
+            <label class="field__label" for="programme">Programme <span class="tiny muted">(students)</span></label>
+            <input class="input" id="programme" name="programme" placeholder="B.E. Computer Science">
+          </div>
+          <div class="field">
+            <label class="field__label" for="designation">Designation <span class="tiny muted">(staff)</span></label>
+            <input class="input" id="designation" name="designation" placeholder="Examiner — Computer Science">
+          </div>
+          <div class="field">
+            <label class="field__label" for="password">Initial password</label>
+            <input class="input" id="password" name="password" type="password" required minlength="10" autocomplete="new-password">
+          </div>
+          <div class="field">
+            <label class="field__label" for="confirm_password">Confirm password</label>
+            <input class="input" id="confirm_password" name="confirm_password" type="password" required minlength="10" autocomplete="new-password">
+          </div>
+        </div>
+        <div class="security-note">
+          <%- icon('shield-check') %>
+          <span>The new user must change this password at first sign-in. Password changes are audited.</span>
+        </div>
+      </div>
+      <div class="modal__foot">
+        <button type="button" class="btn btn--ghost" data-modal-close>Cancel</button>
+        <button type="submit" class="btn btn--primary" data-submit-btn>
+          <span class="btn__spinner" aria-hidden="true"></span>
+          <span class="btn__label"><%- icon('user-check') %> Create account</span>
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Change role modal -->
+<div class="modal-overlay" id="roleModal" role="dialog" aria-modal="true" aria-labelledby="roleTitle">
+  <div class="modal">
+    <form method="post" action="/admin/accounts" id="roleForm">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <div class="modal__head">
+        <div><h3 id="roleTitle">Assign a role</h3><p>Changing a role revokes existing sessions and forces re-authentication.</p></div>
+        <button type="button" class="modal__close" data-modal-close aria-label="Close"><%- icon('x') %></button>
+      </div>
+      <div class="modal__body">
+        <div class="portal-note">
+          <%- icon('user') %>
+          <span><strong data-role-name>—</strong> · <span class="mono" data-role-username>—</span></span>
+        </div>
+        <div class="field">
+          <label class="field__label" for="new_role">New role</label>
+          <select class="input" id="new_role" name="role" required>
+            <% Object.keys(roleDefinitions).forEach((r) => { %>
+              <option value="<%= r %>"><%= roleDefinitions[r].label %></option>
+            <% }); %>
+          </select>
+        </div>
+        <div class="security-note">
+          <%- icon('shield') %>
+          <span>The last active administrator cannot be demoted. You cannot remove your own administrator role.</span>
+        </div>
+      </div>
+      <div class="modal__foot">
+        <button type="button" class="btn btn--ghost" data-modal-close>Cancel</button>
+        <button type="submit" class="btn btn--primary" data-submit-btn>
+          <span class="btn__spinner" aria-hidden="true"></span>
+          <span class="btn__label"><%- icon('shield-check') %> Update role</span>
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('click', function (event) {
+    const trigger = event.target.closest('[data-modal-open="roleModal"]');
+    if (!trigger) return;
+    let data = {};
+    try { data = JSON.parse(trigger.getAttribute('data-modal-prefill') || '{}'); } catch (e) { data = {}; }
+    const form = document.getElementById('roleForm');
+    if (form && data.account_id) form.setAttribute('action', '/admin/accounts/' + data.account_id + '/role');
+    const name = document.querySelector('[data-role-name]');
+    const username = document.querySelector('[data-role-username]');
+    if (name) name.textContent = data.name || '—';
+    if (username) username.textContent = data.username || '—';
+    const select = document.getElementById('new_role');
+    if (select && data.role) select.value = data.role;
+  });
+</script>

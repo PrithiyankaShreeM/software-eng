@@ -1,0 +1,109 @@
+<div class="app">
+  <div class="sidebar-scrim" data-sidebar-scrim></div>
+
+  <!-- ===================== SIDEBAR ===================== -->
+  <aside class="sidebar" id="sidebar" aria-label="Platform navigation">
+    <div class="sidebar__head">
+      <a href="<%= currentUser ? (dashboards.find(d => d.role === currentUser.role) || {}).path || '/' : '/login' %>" style="text-decoration:none">
+        <%- include('../partials/brand') %>
+      </a>
+    </div>
+
+    <div class="sidebar__section">
+      <div class="sidebar__label">Signed in as</div>
+      <div style="padding:0 var(--sp-3) var(--sp-4)">
+        <span class="badge <%= roleDefinitions[currentUser.role] ? roleDefinitions[currentUser.role].badgeClass : 'badge--muted' %>">
+          <%= currentUser.roleLabel %>
+        </span>
+        <% if (currentUser.isDemo) { %>
+          <span class="badge badge--demo" style="margin-left:4px">DEMO</span>
+        <% } %>
+      </div>
+
+      <div class="sidebar__label">Navigation</div>
+      <ul class="sidebar__nav">
+        <% navigation.primary.forEach((item) => { %>
+          <li>
+            <a class="sidebar__link <%= currentPath === item.href || (item.active && currentPath === item.href) ? 'is-active' : '' %>"
+               href="<%= item.href %>">
+              <%- icon(item.icon) %>
+              <span><%= item.label %></span>
+            </a>
+          </li>
+        <% }); %>
+      </ul>
+
+      <% if (typeof extraNav !== 'undefined' && extraNav && extraNav.length) { %>
+        <div class="sidebar__label"><%= typeof extraNavLabel !== 'undefined' ? extraNavLabel : 'Workspace' %></div>
+        <ul class="sidebar__nav">
+          <% extraNav.forEach((item) => { %>
+            <li>
+              <a class="sidebar__link <%= currentPath === item.href ? 'is-active' : '' %>" href="<%= item.href %>">
+                <%- icon(item.icon || 'grid') %>
+                <span><%= item.label %></span>
+              </a>
+            </li>
+          <% }); %>
+        </ul>
+      <% } %>
+
+      <% if (typeof lockedModules !== 'undefined' && lockedModules && lockedModules.length) { %>
+        <div class="sidebar__label" style="margin-top:var(--sp-4)">Restricted</div>
+        <ul class="sidebar__nav">
+          <% lockedModules.forEach((item) => { %>
+            <li>
+              <span class="sidebar__link sidebar__link--locked" title="Your role does not grant access to this module">
+                <%- icon('lock') %>
+                <span><%= item.label %></span>
+              </span>
+            </li>
+          <% }); %>
+        </ul>
+      <% } %>
+    </div>
+
+    <div class="sidebar__foot">
+      <div class="sidebar__user">
+        <div class="sidebar__avatar" aria-hidden="true"><%= initials(currentUser.fullName) %></div>
+        <div class="sidebar__user-meta">
+          <div class="sidebar__user-name" title="<%= currentUser.fullName %>"><%= currentUser.fullName %></div>
+          <div class="sidebar__user-role"><%= currentUser.publicId || currentUser.username %></div>
+        </div>
+      </div>
+      <form method="post" action="/logout">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <button type="submit" class="sidebar__logout"><%- icon('logout') %> Sign out</button>
+      </form>
+    </div>
+  </aside>
+
+  <!-- ===================== MAIN ===================== -->
+  <div class="main">
+    <header class="topbar">
+      <button type="button" class="btn btn--ghost btn--icon topbar__menu" data-sidebar-toggle aria-label="Open navigation" aria-expanded="false" aria-controls="sidebar">
+        <%- icon('menu') %>
+      </button>
+      <div class="topbar__title">
+        <h1><%= typeof pageTitle !== 'undefined' ? pageTitle : 'Dashboard' %></h1>
+        <div class="topbar__subtitle">
+          <%= typeof pageSubtitle !== 'undefined' && pageSubtitle ? pageSubtitle + ' · ' : '' %><%= university.shortName %> Central Authentication
+        </div>
+      </div>
+      <div class="topbar__actions">
+        <span class="session-pill" title="Session expires after inactivity">
+          <%- icon('clock') %>
+          Session <strong><%= currentUser.sessionMinutesRemaining || 0 %> min</strong>
+        </span>
+        <% if (currentUser.isDemo) { %>
+          <span class="badge badge--demo"><%- icon('key') %> Demo account</span>
+        <% } %>
+        <span class="badge <%= roleDefinitions[currentUser.role] ? roleDefinitions[currentUser.role].badgeClass : 'badge--muted' %>"><%= currentUser.roleLabel %></span>
+      </div>
+    </header>
+
+    <main class="content <%= typeof contentClass !== 'undefined' ? contentClass : '' %>" id="main-content">
+      <%- include('../partials/flash') %>
+      <%- body %>
+    </main>
+  </div>
+</div>
